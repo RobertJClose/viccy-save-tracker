@@ -53,6 +53,26 @@ restarting the script with the other directory.
 If neither flag is given, `--once` is the default (and still requires
 `--files`).
 
+## Running tests
+
+Before and after any change to `tracker.py`, run the unit test suite from
+the repository root:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The tests document the script's current behaviour end-to-end, including
+the parsing helpers, the dedup ledger, the CSV output format, CLI
+validation, and watch mode. The real fixture `example.v2` is parsed as an
+integration test, so good-discovery (including late-game goods like
+`automobiles` and `radio`) is verified.
+
+Agents are responsible for writing tests for the code they develop: any
+new behaviour must ship with its test, and any behaviour change must be
+made together with its updated test. Leave the suite green before
+finishing a task.
+
 ## Save-file format (for reference)
 
 Victoria II saves are plain text. The first line is the game date:
