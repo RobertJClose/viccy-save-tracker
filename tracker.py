@@ -28,7 +28,7 @@ from pathlib import Path
 REPO_DIR = Path(__file__).resolve().parent
 SAVE_DIR = REPO_DIR.parent
 
-OUTPUT_FILENAME = "coal_prices.csv"
+OUTPUT_FILENAME = "goods_prices.csv"
 PROCESSED_FILENAME = "processed_dates.json"
 
 SAVE_FILES = [
@@ -72,14 +72,19 @@ def extract_game_date(text: str) -> str:
     return f"{year:04d}-{month:02d}-{day:02d}"
 
 
-def extract_coal_price(text: str) -> float:
+def extract_goods(text: str) -> dict[str, float]:
     """
-    Extract the coal price from worldmarket.price_pool.
+    Extract every good price from worldmarket.price_pool.
 
-    We first isolate the price_pool block, then look specifically for coal.
+    We first isolate the price_pool block, then capture every pair
+    of good_name=price within it.
 
     Example:
-        coal=2.77045
+        coal=2.33002
+        iron=3.53003
+
+    Returns:
+        {"coal": 2.33002, "iron": 3.53003, ...}
     """
 
     price_pool_match = re.search(
@@ -93,29 +98,32 @@ def extract_coal_price(text: str) -> float:
 
     price_pool = price_pool_match.group(1)
 
-    coal_match = re.search(
-        r'\bcoal=([-+]?(?:\d+(?:\.\d*)?|\.\d+))',
+    goods: dict[str, float] = {}
+
+    for good, price in re.findall(
+        r'(\w+)=([-+]?(?:\d+(?:\.\d*)?|\.\d+))',
         price_pool,
-    )
+    ):
+        goods[good] = float(price)
 
-    if not coal_match:
-        raise ValueError("Could not find coal price in price_pool.")
+    if not goods:
+        raise ValueError("No goods found in price_pool.")
 
-    return float(coal_match.group(1))
+    return goods
 
 
-def parse_save(path: Path) -> tuple[str, float]:
+def parse_save(path: Path) -> tuple[str, dict[str, float]]:
     """
     Parse a Victoria II save and return:
 
-        (game_date, coal_price)
+        (game_date, {good: price, ...})
     """
     text = read_save(path)
 
     game_date = extract_game_date(text)
-    coal_price = extract_coal_price(text)
+    goods = extract_goods(text)
 
-    return game_date, coal_price
+    return game_date, goods
 
 
 # ---------------------------------------------------------------------------
@@ -160,14 +168,19 @@ def save_processed_dates(processed_file: Path, dates: set[str]) -> None:
 # CSV handling
 # ---------------------------------------------------------------------------
 
-def append_observation(output_file: Path, game_date: str, coal_price: float) -> None:
+def append_observations(
+    output_file: Path,
+    game_date: str,
+    goods: dict[str, float],
+) -> None:
     """
-    Append one observation to coal_prices.csv.
+    Append one row per good to goods_prices.csv.
 
     CSV format:
 
         date,good,price
         1836-01-02,coal,2.33002
+        1836-01-02,iron,3.53003
     """
 
     file_exists = output_file.exists()
@@ -183,11 +196,12 @@ def append_observation(output_file: Path, game_date: str, coal_price: float) -> 
         if not file_exists:
             writer.writerow(["date", "good", "price"])
 
-        writer.writerow([
-            game_date,
-            "coal",
-            f"{coal_price:.5f}",
-        ])
+        for good in sorted(goods):
+            writer.writerow([
+                game_date,
+                good,
+                f"{goods[good]:.5f}",
+            ])
 
 
 # ---------------------------------------------------------------------------
@@ -224,7 +238,7 @@ def process_save(
         return False
 
     try:
-        game_date, coal_price = parse_save(path)
+        game_date, goods = parse_save(path)
 
     except (OSError, ValueError) as exc:
         print(f"Could not process {path.name}: {exc}")
@@ -234,14 +248,14 @@ def process_save(
     if game_date in processed_dates:
         return False
 
-    append_observation(output_file, game_date, coal_price)
+    append_observations(output_file, game_date, goods)
 
     processed_dates.add(game_date)
     save_processed_dates(processed_file, processed_dates)
 
     print(
         f"Recorded {game_date}: "
-        f"coal = {coal_price:.5f}"
+        f"{len(goods)} goods"
     )
 
     return True
@@ -339,7 +353,7 @@ def watch(output_dir: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Track Victoria II coal prices."
+        description="Track Victoria II good prices."
     )
 
     parser.add_argument(

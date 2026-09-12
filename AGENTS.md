@@ -6,9 +6,8 @@ A Python script that watches Victoria II autosaves as they roll in and
 appends rows to a `.csv` file. The CSV is designed for import into
 LibreOffice Calc for visualisation and analysis.
 
-The current implementation tracks coal prices. The design goal is a
-general goods-price tracker; each good is simply a column (or, as
-currently implemented, a row with a `good` field) of `date,good,price`.
+The tracker records **every** good's price found in
+`worldmarket.price_pool`. Each good is a row of `date,good,price`.
 
 ## Directory layout
 
@@ -21,7 +20,7 @@ save games\                <- Victoria II's save directory (parent of the repo)
     tracker.py
     example.v2             <- example save for agents to inspect
   history\<output-dir>      <- user-chosen per-world output (see below)
-    coal_prices.csv        <- output CSV (created at runtime)
+    goods_prices.csv       <- output CSV (created at runtime)
     processed_dates.json   <- dedup ledger (created at runtime)
 ```
 
@@ -41,7 +40,7 @@ python tracker.py --watch history\france
 
 The output directory is **mandatory** and must already exist. It is the
 "history" for a specific save game: it holds that world's
-`coal_prices.csv` and `processed_dates.json`. The user is responsible
+`goods_prices.csv` and `processed_dates.json`. The user is responsible
 for pointing the script at the directory matching the save they are
 about to play; switching to a different save means stopping and
 restarting the script with the other directory.
@@ -101,10 +100,12 @@ If the file is missing or corrupt, the script starts with an empty set
 
 ## Design notes for future agents
 
-- **Single extraction helper:** Because there are many goods and each
-  extraction is trivial, use one function that accepts a good name and
-  returns the price, rather than a separate helper per good.
-- **stdlib only:** The script uses no third-party packages.
+- **Single extraction helper:** There is exactly one parsing function,
+  `extract_goods`, which isolates the `price_pool` block and returns a
+  `{good: price}` dict. Good names are discovered dynamically from the
+  save rather than hardcoded, so late-game goods and modded goods are
+  tracked without code changes. Do not reintroduce per-good helpers.
+- **Stdlib only:** The script uses no third-party packages.
 - **Encoding:** Save files are read as UTF-8 with `errors='replace'`
   (one bad byte must not abort the whole file).
 - **Polling, not events:** The watcher checks file modification times

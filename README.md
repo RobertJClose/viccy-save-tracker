@@ -1,7 +1,7 @@
 # Victoria II Price Tracker
 
 A small Python script that watches Victoria II autosaves and appends
-commodity prices to a `.csv` file suitable for import into LibreOffice
+every good's price to a `.csv` file suitable for import into LibreOffice
 Calc.
 
 ## Requirements
@@ -33,8 +33,8 @@ Calc.
 
 Both modes require an **output directory** that already exists. This
 directory is the "history" for a specific save game: it holds that
-world's `coal_prices.csv` and `processed_dates.json`. Point the script at
-the directory matching the save you are about to play.
+world's `goods_prices.csv` and `processed_dates.json`. Point the script
+at the directory matching the save you are about to play.
 
 ### One-shot
 
@@ -59,21 +59,27 @@ the output directory for that world.
 
 ## Output
 
-The script writes `coal_prices.csv` (created on first run) inside the
-output directory you specify:
+The script writes `goods_prices.csv` (created on first run) inside the
+output directory you specify. For each in-game date it records a row for
+**every** good found in `worldmarket.price_pool`:
 
 ```csv
 date,good,price
 1836-01-02,coal,2.33002
+1836-01-02,iron,3.53003
 1836-02-01,coal,2.60028
+1836-02-01,iron,3.61029
 ```
 
-`date` is the in-game date (YYYY-MM-DD), not the real-world date.
+`date` is the in-game date (YYYY-MM-DD), not the real-world date. The
+good list is taken straight from the save, so late-game goods (for
+example `automobiles`, `aeroplanes`, `radio`) appear automatically as
+they are unlocked.
 
 ### Importing into LibreOffice Calc
 
 1. Open LibreOffice Calc.
-2. **File → Open** and select `coal_prices.csv`.
+2. **File → Open** and select `goods_prices.csv`.
 3. In the Text Import dialog:
    - Character set: Unicode (UTF-8)
    - Separator: Comma
@@ -103,7 +109,7 @@ save games\
   tracker\
     tracker.py
     history\france\
-      coal_prices.csv
+      goods_prices.csv
       processed_dates.json
 ```
 
