@@ -31,12 +31,17 @@ Calc.
 
 ## Usage
 
+Both modes require an **output directory** that already exists. This
+directory is the "history" for a specific save game: it holds that
+world's `coal_prices.csv` and `processed_dates.json`. Point the script at
+the directory matching the save you are about to play.
+
 ### One-shot
 
 Process every available autosave and exit:
 
 ```bash
-python tracker.py --once
+python tracker.py --once history\france
 ```
 
 ### Watch mode
@@ -46,13 +51,16 @@ soon as they are detected (after a short delay to let the game finish
 writing). Press **Ctrl+C** to stop.
 
 ```bash
-python tracker.py --watch
+python tracker.py --watch history\france
 ```
+
+If you load a different save game, stop the watcher and restart it with
+the output directory for that world.
 
 ## Output
 
-The script writes `coal_prices.csv` (created on first run) in the
-repository root:
+The script writes `coal_prices.csv` (created on first run) inside the
+output directory you specify:
 
 ```csv
 date,good,price
@@ -75,9 +83,9 @@ The data can now be plotted or analysed like any other spreadsheet.
 
 ## Dedup
 
-A `processed_dates.json` file is maintained automatically. It stores
-in-game dates that have already been exported so that repeated polls
-never produce duplicate rows.
+A `processed_dates.json` file is maintained automatically in the output
+directory. It stores in-game dates that have already been exported so
+that repeated polls never produce duplicate rows.
 
 If this file becomes corrupt, simply delete it — the script will
 recreate it on the next run (with a warning on stderr).
@@ -94,6 +102,9 @@ save games\
   olderautosave.v2
   tracker\
     tracker.py
+    history\france\
+      coal_prices.csv
+      processed_dates.json
 ```
 
 If the game is configured with more or fewer autosave slots, edit the
