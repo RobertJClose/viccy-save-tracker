@@ -22,11 +22,14 @@ from pathlib import Path
 #   REPO_DIR = save games\your-repo
 #   SAVE_DIR = save games
 #
+# The output directory (the CSV history and processed-dates ledger) is chosen
+# by the user at runtime and must match the save game being tracked.
+#
 REPO_DIR = Path(__file__).resolve().parent
 SAVE_DIR = REPO_DIR.parent
 
-OUTPUT_FILE = REPO_DIR / "coal_prices.csv"
-PROCESSED_FILE = REPO_DIR / "processed_dates.json"
+OUTPUT_FILENAME = "coal_prices.csv"
+PROCESSED_FILENAME = "processed_dates.json"
 
 SAVE_FILES = [
     "autosave.v2",
@@ -119,15 +122,15 @@ def parse_save(path: Path) -> tuple[str, float]:
 # Processed-date tracking
 # ---------------------------------------------------------------------------
 
-def load_processed_dates() -> set[str]:
+def load_processed_dates(processed_file: Path) -> set[str]:
     """
     Load dates that have already been exported.
     """
-    if not PROCESSED_FILE.exists():
+    if not processed_file.exists():
         return set()
 
     try:
-        data = json.loads(PROCESSED_FILE.read_text(encoding="utf-8"))
+        data = json.loads(processed_file.read_text(encoding="utf-8"))
 
         if not isinstance(data, list):
             raise ValueError
@@ -136,18 +139,18 @@ def load_processed_dates() -> set[str]:
 
     except (json.JSONDecodeError, ValueError):
         print(
-            f"Warning: {PROCESSED_FILE} is invalid. "
+            f"Warning: {processed_file} is invalid. "
             "Starting with no processed dates.",
             file=sys.stderr,
         )
         return set()
 
 
-def save_processed_dates(dates: set[str]) -> None:
+def save_processed_dates(processed_file: Path, dates: set[str]) -> None:
     """
     Save processed dates in a simple JSON file.
     """
-    PROCESSED_FILE.write_text(
+    processed_file.write_text(
         json.dumps(sorted(dates), indent=2),
         encoding="utf-8",
     )
@@ -157,7 +160,7 @@ def save_processed_dates(dates: set[str]) -> None:
 # CSV handling
 # ---------------------------------------------------------------------------
 
-def append_observation(game_date: str, coal_price: float) -> None:
+def append_observation(output_file: Path, game_date: str, coal_price: float) -> None:
     """
     Append one observation to coal_prices.csv.
 
@@ -167,9 +170,9 @@ def append_observation(game_date: str, coal_price: float) -> None:
         1836-01-02,coal,2.33002
     """
 
-    file_exists = OUTPUT_FILE.exists()
+    file_exists = output_file.exists()
 
-    with OUTPUT_FILE.open(
+    with output_file.open(
         "a",
         newline="",
         encoding="utf-8",
@@ -188,10 +191,29 @@ def append_observation(game_date: str, coal_price: float) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Output paths
+# ---------------------------------------------------------------------------
+
+def output_paths(output_dir: Path) -> tuple[Path, Path]:
+    """
+    Given an output directory, return (output_file, processed_file).
+    """
+    return (
+        output_dir / OUTPUT_FILENAME,
+        output_dir / PROCESSED_FILENAME,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Save processing
 # ---------------------------------------------------------------------------
 
-def process_save(path: Path, processed_dates: set[str]) -> bool:
+def process_save(
+    path: Path,
+    output_file: Path,
+    processed_file: Path,
+    processed_dates: set[str],
+) -> bool:
     """
     Process one save.
 
@@ -212,10 +234,10 @@ def process_save(path: Path, processed_dates: set[str]) -> bool:
     if game_date in processed_dates:
         return False
 
-    append_observation(game_date, coal_price)
+    append_observation(output_file, game_date, coal_price)
 
     processed_dates.add(game_date)
-    save_processed_dates(processed_dates)
+    save_processed_dates(processed_file, processed_dates)
 
     print(
         f"Recorded {game_date}: "
@@ -225,22 +247,24 @@ def process_save(path: Path, processed_dates: set[str]) -> bool:
     return True
 
 
-def process_existing_saves() -> None:
+def process_existing_saves(output_dir: Path) -> None:
     """
     Process all currently available autosaves.
     """
 
-    processed_dates = load_processed_dates()
+    output_file, processed_file = output_paths(output_dir)
+    processed_dates = load_processed_dates(processed_file)
 
-    print(f"Save directory: {SAVE_DIR}")
-    print(f"Repository:     {REPO_DIR}")
+    print(f"Output directory: {output_dir}")
+    print(f"Save directory:   {SAVE_DIR}")
+    print(f"Repository:       {REPO_DIR}")
     print()
 
     for filename in SAVE_FILES:
         path = SAVE_DIR / filename
 
         if path.exists():
-            process_save(path, processed_dates)
+            process_save(path, output_file, processed_file, processed_dates)
         else:
             print(f"Not found: {filename}")
 
@@ -249,7 +273,7 @@ def process_existing_saves() -> None:
 # Watch mode
 # ---------------------------------------------------------------------------
 
-def watch() -> None:
+def watch(output_dir: Path) -> None:
     """
     Continuously monitor the autosave files.
 
@@ -257,9 +281,11 @@ def watch() -> None:
     finish being written before attempting to parse it.
     """
 
-    processed_dates = load_processed_dates()
+    output_file, processed_file = output_paths(output_dir)
+    processed_dates = load_processed_dates(processed_file)
 
-    print(f"Watching: {SAVE_DIR}")
+    print(f"Watching:         {SAVE_DIR}")
+    print(f"Output directory: {output_dir}")
     print("Press Ctrl+C to stop.")
     print()
 
@@ -297,7 +323,7 @@ def watch() -> None:
                     # Victoria II may still be writing the save.
                     time.sleep(2)
 
-                    process_save(path, processed_dates)
+                    process_save(path, output_file, processed_file, processed_dates)
 
             # We don't need to poll particularly frequently.
             time.sleep(2)
@@ -317,6 +343,15 @@ def main() -> None:
     )
 
     parser.add_argument(
+        "output_dir",
+        type=Path,
+        help=(
+            "Directory holding the CSV history and processed-dates ledger "
+            "for the save game being tracked."
+        ),
+    )
+
+    parser.add_argument(
         "--once",
         action="store_true",
         help="Process currently available saves and exit.",
@@ -333,15 +368,22 @@ def main() -> None:
     if args.once and args.watch:
         parser.error("Use either --once or --watch, not both.")
 
+    # The output directory must already exist. It is how the user tells us
+    # which save game's history we are tracking.
+    if not args.output_dir.is_dir():
+        parser.error(
+            f"Output directory does not exist: {args.output_dir}"
+        )
+
     # Default to --once if no mode was specified.
     if not args.once and not args.watch:
         args.once = True
 
     if args.once:
-        process_existing_saves()
+        process_existing_saves(args.output_dir)
 
     elif args.watch:
-        watch()
+        watch(args.output_dir)
 
 
 if __name__ == "__main__":

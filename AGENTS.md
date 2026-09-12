@@ -19,9 +19,10 @@ save games\                <- Victoria II's save directory (parent of the repo)
   olderautosave.v2         <- two autosaves ago
   tracker\                 <- THIS REPO (the script lives here)
     tracker.py
+    example.v2             <- example save for agents to inspect
+  history\<output-dir>      <- user-chosen per-world output (see below)
     coal_prices.csv        <- output CSV (created at runtime)
     processed_dates.json   <- dedup ledger (created at runtime)
-    example.v2             <- example save for agents to inspect
 ```
 
 The script lives **inside** the save directory, so it can locate the
@@ -31,12 +32,19 @@ The script lives **inside** the save directory, so it can locate the
 
 ```bash
 # One-shot: process every available autosave and exit.
-python tracker.py --once
+python tracker.py --once history\france
 
 # Watch: poll the save directory; new autosaves are processed as they
 # appear. Ctrl+C to stop.
-python tracker.py --watch
+python tracker.py --watch history\france
 ```
+
+The output directory is **mandatory** and must already exist. It is the
+"history" for a specific save game: it holds that world's
+`coal_prices.csv` and `processed_dates.json`. The user is responsible
+for pointing the script at the directory matching the save they are
+about to play; switching to a different save means stopping and
+restarting the script with the other directory.
 
 If neither flag is given, `--once` is the default.
 
