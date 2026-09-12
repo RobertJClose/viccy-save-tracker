@@ -38,21 +38,35 @@ at the directory matching the save you are about to play.
 
 ### One-shot
 
-Process every available autosave and exit:
+Record the autosave file(s) you name and exit. You are responsible for
+picking the files that belong to the save game being tracked:
 
 ```bash
-python tracker.py --once history\france
+python tracker.py --once --files autosave.v2 history\france
+
+# Backfill from the previous two autosaves (only correct if all three
+# files are from the save game being tracked).
+python tracker.py --once --files autosave.v2,oldautosave.v2,olderautosave.v2 history\france
 ```
 
 ### Watch mode
 
-Poll the save directory continuously; new autosaves are processed as
-soon as they are detected (after a short delay to let the game finish
+Poll the live `autosave.v2` continuously; each new autosave is processed
+as soon as it is detected (after a short delay to let the game finish
 writing). Press **Ctrl+C** to stop.
 
 ```bash
 python tracker.py --watch history\france
 ```
+
+Only `autosave.v2` is watched. The rotated files (`oldautosave.v2`,
+`olderautosave.v2`) are deliberately ignored: when a new save game
+autosaves for the first time, the game cascades the previous session's
+autosaves into those slots, and recording them would pollute the watch
+with a different world's data. Since every date first appears in
+`autosave.v2`, no current-world observation is missed. Tradeoff: an
+autosave missed while the watcher is down is not backfilled automatically
+— recover it manually with `--once --files` (see above).
 
 If you load a different save game, stop the watcher and restart it with
 the output directory for that world.
@@ -98,8 +112,10 @@ recreate it on the next run (with a warning on stderr).
 
 ## Save file location
 
-The script expects the three Victoria II autosave files to be in the
-**parent** directory of the repository:
+The script looks for `autosave.v2` in the **parent** directory of the
+repository. In watch mode that is the only file it reads; in one-shot
+mode it reads whatever files you name via `--files` (which must be one
+of the file names listed in the `SAVE_FILES` constant):
 
 ```
 save games\
@@ -112,6 +128,3 @@ save games\
       goods_prices.csv
       processed_dates.json
 ```
-
-If the game is configured with more or fewer autosave slots, edit the
-`SAVE_FILES` list in `tracker.py`.

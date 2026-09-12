@@ -30,10 +30,15 @@ The script lives **inside** the save directory, so it can locate the
 ## How to run
 
 ```bash
-# One-shot: process every available autosave and exit.
-python tracker.py --once history\france
+# One-shot: record the file(s) you name and exit. It is your
+# responsibility to pick the files that belong to this save game.
+python tracker.py --once --files autosave.v2 history\france
 
-# Watch: poll the save directory; new autosaves are processed as they
+# The same, but also backfill from the previous two autosaves (only
+# correct if all three files are from the save game being tracked).
+python tracker.py --once --files autosave.v2,oldautosave.v2,olderautosave.v2 history\france
+
+# Watch: poll the live autosave; new autosaves are processed as they
 # appear. Ctrl+C to stop.
 python tracker.py --watch history\france
 ```
@@ -45,7 +50,8 @@ for pointing the script at the directory matching the save they are
 about to play; switching to a different save means stopping and
 restarting the script with the other directory.
 
-If neither flag is given, `--once` is the default.
+If neither flag is given, `--once` is the default (and still requires
+`--files`).
 
 ## Save-file format (for reference)
 
@@ -108,6 +114,17 @@ If the file is missing or corrupt, the script starts with an empty set
 - **Stdlib only:** The script uses no third-party packages.
 - **Encoding:** Save files are read as UTF-8 with `errors='replace'`
   (one bad byte must not abort the whole file).
-- **Polling, not events:** The watcher checks file modification times
-  every ~2 seconds and waits an extra 2 seconds after a change is
-  detected before parsing (to let the game finish writing).
+- **Polling, not events:** The watcher checks the live autosave's
+  modification time every ~2 seconds and waits an extra 2 seconds after
+  a change is detected before parsing (to let the game finish writing).
+- **Watch mode tracks only `autosave.v2`:** `oldautosave.v2` and
+  `olderautosave.v2` are deliberately not watched. When a new save game
+  autosaves for the first time, the game cascades the previous session's
+  autosaves into those rotated files; watching them would pollute the
+  current watch with a different save game's data. Tradeoff: an autosave
+  missed while the watcher is down is not backfilled automatically (see
+  `--once --files` for manual recovery). Do not reintroduce them into
+  the watch loop without solving the cross-world contamination.
+- **`--once` is a manual operation:** it requires `--files` naming the
+  specific save file(s) to record. Correctness is the user's
+  responsibility; the script intentionally does not guess.

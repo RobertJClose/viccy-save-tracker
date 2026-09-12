@@ -37,6 +37,16 @@ SAVE_FILES = [
     "olderautosave.v2",
 ]
 
+# Watch mode tracks only the live autosave. The rotated files are
+# deliberately ignored: after a new save game's first autosave, the game
+# cascades the previous session's saves into oldautosave.v2 /
+# olderautosave.v2, and recording those would pollute the current watch
+# with a different save game's data. Consequence: an autosave missed while
+# the watcher is down is not backfilled from the rotated files.
+WATCH_FILES = [
+    "autosave.v2",
+]
+
 
 # ---------------------------------------------------------------------------
 # Save parsing
@@ -261,9 +271,9 @@ def process_save(
     return True
 
 
-def process_existing_saves(output_dir: Path) -> None:
+def process_existing_saves(output_dir: Path, files: list[str]) -> None:
     """
-    Process all currently available autosaves.
+    Process the user-chosen autosave files (see --files).
     """
 
     output_file, processed_file = output_paths(output_dir)
@@ -274,7 +284,7 @@ def process_existing_saves(output_dir: Path) -> None:
     print(f"Repository:       {REPO_DIR}")
     print()
 
-    for filename in SAVE_FILES:
+    for filename in files:
         path = SAVE_DIR / filename
 
         if path.exists():
@@ -289,10 +299,11 @@ def process_existing_saves(output_dir: Path) -> None:
 
 def watch(output_dir: Path) -> None:
     """
-    Continuously monitor the autosave files.
+    Continuously monitor the live autosave file.
 
-    When Victoria II modifies an autosave, we wait briefly for the file to
-    finish being written before attempting to parse it.
+    When Victoria II overwrites autosave.v2, we wait briefly for the file
+    to finish being written before attempting to parse it. Rotated files
+    (oldautosave.v2 / olderautosave.v2) are not watched.
     """
 
     output_file, processed_file = output_paths(output_dir)
@@ -306,7 +317,7 @@ def watch(output_dir: Path) -> None:
     # Store the last filesystem modification time we've seen for each file.
     modification_times: dict[Path, float] = {}
 
-    for filename in SAVE_FILES:
+    for filename in WATCH_FILES:
         path = SAVE_DIR / filename
 
         if path.exists():
@@ -314,7 +325,7 @@ def watch(output_dir: Path) -> None:
 
     while True:
         try:
-            for filename in SAVE_FILES:
+            for filename in WATCH_FILES:
                 path = SAVE_DIR / filename
 
                 if not path.exists():
@@ -368,19 +379,50 @@ def main() -> None:
     parser.add_argument(
         "--once",
         action="store_true",
-        help="Process currently available saves and exit.",
+        help=(
+            "Record the autosave file(s) named by --files, then exit. "
+            "Requires --files."
+        ),
     )
 
     parser.add_argument(
         "--watch",
         action="store_true",
-        help="Watch the save directory for new autosaves.",
+        help="Watch the live autosave and record new prices as they appear.",
+    )
+
+    parser.add_argument(
+        "--files",
+        metavar="FILE[,FILE...]",
+        help=(
+            "Comma-separated save file(s) to record with --once, e.g. "
+            "autosave.v2 or autosave.v2,oldautosave.v2,olderautosave.v2. "
+            "You are responsible for choosing the files that belong to the "
+            "save game being tracked."
+        ),
     )
 
     args = parser.parse_args()
 
     if args.once and args.watch:
         parser.error("Use either --once or --watch, not both.")
+
+    files: list[str] | None = None
+
+    if args.files is not None:
+        if not args.once:
+            parser.error("--files may only be used with --once.")
+
+        files = [name.strip() for name in args.files.split(",")]
+
+        for filename in files:
+            if not filename:
+                parser.error("Empty save file name in --files.")
+            if filename not in SAVE_FILES:
+                parser.error(
+                    f"Unknown save file: {filename}. "
+                    f"Expected one of: {', '.join(SAVE_FILES)}"
+                )
 
     # The output directory must already exist. It is how the user tells us
     # which save game's history we are tracking.
@@ -394,7 +436,13 @@ def main() -> None:
         args.once = True
 
     if args.once:
-        process_existing_saves(args.output_dir)
+        if files is None:
+            parser.error(
+                "--once requires --files so you can choose which save "
+                "file(s) to record."
+            )
+
+        process_existing_saves(args.output_dir, files)
 
     elif args.watch:
         watch(args.output_dir)
