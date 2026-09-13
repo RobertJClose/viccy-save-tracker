@@ -1,5 +1,5 @@
 """
-Unit tests for tracker.py.
+Unit tests for the tracker package (main.py, common.py, goods.py, ...).
 
 Run from the repository root:
 
@@ -19,7 +19,13 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import tracker
+import build_inventions_map
+import common
+import goods
+import inventions
+import main
+import technologies
+import unciv_reforms
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -88,38 +94,38 @@ def read_csv(path: Path) -> list[list[str]]:
 class TestExtractGameDate(unittest.TestCase):
 
     def test_single_digit_month_and_day_are_zero_padded(self):
-        self.assertEqual(tracker.extract_game_date(MINIMAL_SAVE), "1836-01-02")
+        self.assertEqual(common.extract_game_date(MINIMAL_SAVE), "1836-01-02")
 
     def test_already_padded_date_round_trips(self):
         text = 'date="1836.04.01"\n'
-        self.assertEqual(tracker.extract_game_date(text), "1836-04-01")
+        self.assertEqual(common.extract_game_date(text), "1836-04-01")
 
     def test_two_digit_month_and_day(self):
         text = 'date="1836.12.31"\n'
-        self.assertEqual(tracker.extract_game_date(text), "1836-12-31")
+        self.assertEqual(common.extract_game_date(text), "1836-12-31")
 
     def test_missing_date_raises(self):
         with self.assertRaises(ValueError):
-            tracker.extract_game_date("no date line in here\n")
+            common.extract_game_date("no date line in here\n")
 
     def test_indented_date_line_is_not_matched(self):
         # Indented date lines (e.g. building_construction blocks) must not be
         # mistaken for the header. Only a line starting at column 0 is matched.
         text = 'player="JAP"\n\tdate="1836.5.6"\n'
         with self.assertRaises(ValueError):
-            tracker.extract_game_date(text)
+            common.extract_game_date(text)
 
     def test_non_header_date_key_is_not_matched(self):
         text = 'price_history_last_update="1836.1.1"\n'
         with self.assertRaises(ValueError):
-            tracker.extract_game_date(text)
+            common.extract_game_date(text)
 
 
 class TestExtractGoods(unittest.TestCase):
 
     def test_extracts_only_price_pool(self):
         expected = MINIMAL_GOODS
-        self.assertEqual(tracker.extract_goods(MINIMAL_SAVE), expected)
+        self.assertEqual(goods.extract_goods(MINIMAL_SAVE), expected)
 
     def test_does_not_match_worldmarket_pool(self):
         # "price_pool=" is a substring risk: worldmarket_pool must not match.
@@ -132,11 +138,11 @@ class TestExtractGoods(unittest.TestCase):
 }
 """
         with self.assertRaises(ValueError):
-            tracker.extract_goods(text)
+            goods.extract_goods(text)
 
     def test_missing_price_pool_raises(self):
         with self.assertRaises(ValueError):
-            tracker.extract_goods("no price pool anywhere\n")
+            goods.extract_goods("no price pool anywhere\n")
 
     def test_empty_price_pool_raises(self):
         text = """worldmarket=
@@ -147,7 +153,7 @@ class TestExtractGoods(unittest.TestCase):
 }
 """
         with self.assertRaises(ValueError):
-            tracker.extract_goods(text)
+            goods.extract_goods(text)
 
     def test_values_parsed_as_floats(self):
         text = """worldmarket=
@@ -159,9 +165,9 @@ class TestExtractGoods(unittest.TestCase):
 \t}
 }
 """
-        goods = tracker.extract_goods(text)
-        self.assertEqual(goods["coal"], 2.33002)
-        self.assertEqual(goods["furniture"], 0.00003)
+        result = goods.extract_goods(text)
+        self.assertEqual(result["coal"], 2.33002)
+        self.assertEqual(result["furniture"], 0.00003)
 
     def test_integer_and_signed_values(self):
         text = """worldmarket=
@@ -175,7 +181,7 @@ class TestExtractGoods(unittest.TestCase):
 }
 """
         self.assertEqual(
-            tracker.extract_goods(text),
+            goods.extract_goods(text),
             {"coal": -1.5, "steel": 2.25, "fish": 5.0},
         )
 
@@ -187,7 +193,7 @@ class TestReadSave(unittest.TestCase):
             p = Path(d) / "save.v2"
             p.write_text('date="1836.1.2"\ncoal=1\n', encoding="utf-8")
             self.assertEqual(
-                tracker.read_save(p),
+                common.read_save(p),
                 'date="1836.1.2"\ncoal=1\n',
             )
 
@@ -196,7 +202,7 @@ class TestReadSave(unittest.TestCase):
             p = Path(d) / "save.v2"
             p.write_bytes(b'date="1836.1.2"\ncoal=1\n\xff\n')
             self.assertEqual(
-                tracker.read_save(p),
+                common.read_save(p),
                 'date="1836.1.2"\ncoal=1\n\ufffd\n',
             )
 
@@ -207,19 +213,19 @@ class TestParseSave(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "autosave.v2"
             p.write_text(MINIMAL_SAVE, encoding="utf-8")
-            game_date, goods = tracker.parse_save(p)
+            game_date, result = main.parse_save(p)
             self.assertEqual(game_date, "1836-01-02")
-            self.assertEqual(goods, MINIMAL_GOODS)
+            self.assertEqual(result, MINIMAL_GOODS)
 
     def test_parses_the_real_example_save(self):
-        game_date, goods = tracker.parse_save(EXAMPLE_SAVE)
+        game_date, result = main.parse_save(EXAMPLE_SAVE)
         self.assertEqual(game_date, "1836-01-02")
-        self.assertEqual(len(goods), 48)
+        self.assertEqual(len(result), 48)
         # The good list is discovered from the save: late-game goods appear.
-        self.assertEqual(goods["coal"], 2.33002)
-        self.assertEqual(goods["furniture"], 4.93002)
-        self.assertEqual(goods["aeroplanes"], 110.0)
-        self.assertEqual(goods["radio"], 16.0)
+        self.assertEqual(result["coal"], 2.33002)
+        self.assertEqual(result["furniture"], 4.93002)
+        self.assertEqual(result["aeroplanes"], 110.0)
+        self.assertEqual(result["radio"], 16.0)
 
 
 class TestProcessedDates(unittest.TestCase):
@@ -228,7 +234,7 @@ class TestProcessedDates(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             err = io.StringIO()
             with redirect_stderr(err):
-                result = tracker.load_processed_dates(Path(d) / "nope.json")
+                result = common.load_processed_dates(Path(d) / "nope.json")
             self.assertEqual(result, set())
             self.assertEqual(err.getvalue(), "")
 
@@ -237,7 +243,7 @@ class TestProcessedDates(unittest.TestCase):
             p = Path(d) / "processed.json"
             p.write_text('["1836-01-02", "1836-02-01"]', encoding="utf-8")
             self.assertEqual(
-                tracker.load_processed_dates(p),
+                common.load_processed_dates(p),
                 {"1836-01-02", "1836-02-01"},
             )
 
@@ -247,7 +253,7 @@ class TestProcessedDates(unittest.TestCase):
             p.write_text("{{not json", encoding="utf-8")
             err = io.StringIO()
             with redirect_stderr(err):
-                result = tracker.load_processed_dates(p)
+                result = common.load_processed_dates(p)
             self.assertEqual(result, set())
             self.assertIn("Warning", err.getvalue())
 
@@ -257,14 +263,14 @@ class TestProcessedDates(unittest.TestCase):
             p.write_text('{"a": 1}', encoding="utf-8")
             err = io.StringIO()
             with redirect_stderr(err):
-                result = tracker.load_processed_dates(p)
+                result = common.load_processed_dates(p)
             self.assertEqual(result, set())
             self.assertIn("Warning", err.getvalue())
 
     def test_save_writes_sorted_json_list(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "processed.json"
-            tracker.save_processed_dates(
+            common.save_processed_dates(
                 p, {"1836-02-01", "1836-01-02", "1836-03-02"}
             )
             data = json.loads(p.read_text(encoding="utf-8"))
@@ -274,8 +280,8 @@ class TestProcessedDates(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "processed.json"
             dates = {"1836-01-02", "1836-02-01", "1836-04-03"}
-            tracker.save_processed_dates(p, dates)
-            self.assertEqual(tracker.load_processed_dates(p), dates)
+            common.save_processed_dates(p, dates)
+            self.assertEqual(common.load_processed_dates(p), dates)
 
 
 class TestAppendObservations(unittest.TestCase):
@@ -283,7 +289,7 @@ class TestAppendObservations(unittest.TestCase):
     def test_creates_file_with_header_and_sorted_rows(self):
         with tempfile.TemporaryDirectory() as d:
             out = Path(d) / "goods.csv"
-            tracker.append_observations(
+            goods.append_observations(
                 out,
                 "1836-01-02",
                 {
@@ -307,8 +313,8 @@ class TestAppendObservations(unittest.TestCase):
     def test_appends_without_duplicate_header(self):
         with tempfile.TemporaryDirectory() as d:
             out = Path(d) / "goods.csv"
-            tracker.append_observations(out, "1836-01-02", {"coal": 2.33})
-            tracker.append_observations(out, "1836-02-01", {"iron": 3.53})
+            goods.append_observations(out, "1836-01-02", {"coal": 2.33})
+            goods.append_observations(out, "1836-02-01", {"iron": 3.53})
 
             rows = read_csv(out)
             self.assertEqual(rows[0], ["date", "good", "price"])
@@ -322,7 +328,7 @@ class TestAppendObservations(unittest.TestCase):
     def test_empty_goods_writes_header_only(self):
         with tempfile.TemporaryDirectory() as d:
             out = Path(d) / "goods.csv"
-            tracker.append_observations(out, "1836-01-02", {})
+            goods.append_observations(out, "1836-01-02", {})
             self.assertEqual(read_csv(out), [["date", "good", "price"]])
 
 
@@ -331,7 +337,7 @@ class TestOutputPaths(unittest.TestCase):
     def test_returns_csv_and_processed_paths(self):
         out = Path("some/output")
         self.assertEqual(
-            tracker.output_paths(out),
+            common.output_paths(out),
             (out / "goods_prices.csv", out / "processed_dates.json"),
         )
 
@@ -344,7 +350,7 @@ class TestProcessSave(unittest.TestCase):
             output = root / "goods.csv"
             processed = root / "processed.json"
             with redirect_stdout(io.StringIO()):
-                result = tracker.process_save(
+                result = main.process_save(
                     root / "missing.v2", output, processed, set()
                 )
             self.assertFalse(result)
@@ -360,7 +366,7 @@ class TestProcessSave(unittest.TestCase):
             processed = root / "processed.json"
             out = io.StringIO()
             with redirect_stdout(out):
-                result = tracker.process_save(
+                result = main.process_save(
                     save, output, processed, set()
                 )
             self.assertFalse(result)
@@ -379,7 +385,7 @@ class TestProcessSave(unittest.TestCase):
 
             out = io.StringIO()
             with redirect_stdout(out):
-                result = tracker.process_save(
+                result = main.process_save(
                     save, output, processed, processed_dates
                 )
 
@@ -404,12 +410,12 @@ class TestProcessSave(unittest.TestCase):
             processed_dates = set()
 
             with redirect_stdout(io.StringIO()):
-                tracker.process_save(save, output, processed, processed_dates)
+                main.process_save(save, output, processed, processed_dates)
 
             rows_before = read_csv(output)
 
             with redirect_stdout(io.StringIO()):
-                result = tracker.process_save(
+                result = main.process_save(
                     save, output, processed, processed_dates
                 )
 
@@ -430,9 +436,9 @@ class TestProcessExistingSaves(unittest.TestCase):
             out = root / "out"
             out.mkdir()
 
-            with mock.patch.object(tracker, "SAVE_DIR", save_dir):
+            with mock.patch.object(main, "SAVE_DIR", save_dir):
                 with redirect_stdout(io.StringIO()):
-                    tracker.process_existing_saves(out, ["autosave.v2"])
+                    main.process_existing_saves(out, ["autosave.v2"])
 
             rows = read_csv(out / "goods_prices.csv")
             self.assertEqual(rows[0], ["date", "good", "price"])
@@ -451,9 +457,9 @@ class TestProcessExistingSaves(unittest.TestCase):
             out.mkdir()
 
             stdout = io.StringIO()
-            with mock.patch.object(tracker, "SAVE_DIR", save_dir):
+            with mock.patch.object(main, "SAVE_DIR", save_dir):
                 with redirect_stdout(stdout):
-                    tracker.process_existing_saves(out, ["autosave.v2"])
+                    main.process_existing_saves(out, ["autosave.v2"])
 
             self.assertIn("Not found: autosave.v2", stdout.getvalue())
             self.assertFalse((out / "goods_prices.csv").exists())
@@ -472,9 +478,9 @@ class TestProcessExistingSaves(unittest.TestCase):
             out = root / "out"
             out.mkdir()
 
-            with mock.patch.object(tracker, "SAVE_DIR", save_dir):
+            with mock.patch.object(main, "SAVE_DIR", save_dir):
                 with redirect_stdout(io.StringIO()):
-                    tracker.process_existing_saves(
+                    main.process_existing_saves(
                         out, ["autosave.v2", "oldautosave.v2"]
                     )
 
@@ -504,11 +510,11 @@ class TestWatch(unittest.TestCase):
         autosave = save_dir / "autosave.v2"
         autosave.write_text(MINIMAL_SAVE, encoding="utf-8")
 
-        with mock.patch.object(tracker, "SAVE_DIR", save_dir), \
-                mock.patch("tracker.time.sleep", side_effect=KeyboardInterrupt), \
-                mock.patch("tracker.process_save") as mock_process:
+        with mock.patch.object(main, "SAVE_DIR", save_dir), \
+                mock.patch("main.time.sleep", side_effect=KeyboardInterrupt), \
+                mock.patch("main.process_save") as mock_process:
             with redirect_stdout(io.StringIO()):
-                tracker.watch(out)
+                main.watch(out)
 
         mock_process.assert_not_called()
 
@@ -529,11 +535,11 @@ class TestWatch(unittest.TestCase):
                 return
             raise KeyboardInterrupt
 
-        with mock.patch.object(tracker, "SAVE_DIR", save_dir), \
-                mock.patch("tracker.time.sleep", side_effect=sleep_hook), \
-                mock.patch("tracker.process_save", return_value=True) as mock_process:
+        with mock.patch.object(main, "SAVE_DIR", save_dir), \
+                mock.patch("main.time.sleep", side_effect=sleep_hook), \
+                mock.patch("main.process_save", return_value=True) as mock_process:
             with redirect_stdout(io.StringIO()):
-                tracker.watch(out)
+                main.watch(out)
 
         self.assertEqual(mock_process.call_count, 1)
         self.assertEqual(mock_process.call_args.args[0], autosave)
@@ -556,11 +562,11 @@ class TestWatch(unittest.TestCase):
                 return
             raise KeyboardInterrupt
 
-        with mock.patch.object(tracker, "SAVE_DIR", save_dir), \
-                mock.patch("tracker.time.sleep", side_effect=sleep_hook), \
-                mock.patch("tracker.process_save") as mock_process:
+        with mock.patch.object(main, "SAVE_DIR", save_dir), \
+                mock.patch("main.time.sleep", side_effect=sleep_hook), \
+                mock.patch("main.process_save") as mock_process:
             with redirect_stdout(io.StringIO()):
-                tracker.watch(out)
+                main.watch(out)
 
         mock_process.assert_not_called()
 
@@ -568,17 +574,37 @@ class TestWatch(unittest.TestCase):
 class TestConstants(unittest.TestCase):
 
     def test_watch_mode_tracks_only_the_live_autosave(self):
-        self.assertEqual(tracker.WATCH_FILES, ["autosave.v2"])
+        self.assertEqual(common.WATCH_FILES, ["autosave.v2"])
 
     def test_save_files_are_the_three_rotated_names(self):
         self.assertEqual(
-            tracker.SAVE_FILES,
+            common.SAVE_FILES,
             ["autosave.v2", "oldautosave.v2", "olderautosave.v2"],
         )
 
     def test_output_filenames(self):
-        self.assertEqual(tracker.OUTPUT_FILENAME, "goods_prices.csv")
-        self.assertEqual(tracker.PROCESSED_FILENAME, "processed_dates.json")
+        self.assertEqual(common.OUTPUT_FILENAME, "goods_prices.csv")
+        self.assertEqual(common.PROCESSED_FILENAME, "processed_dates.json")
+
+
+class TestStubs(unittest.TestCase):
+    """Future tracking modules exist but are not implemented yet."""
+
+    def test_technology_extraction_is_not_implemented(self):
+        with self.assertRaises(NotImplementedError):
+            technologies.extract_technologies("JAP=\n{\n}\n")
+
+    def test_invention_extraction_is_not_implemented(self):
+        with self.assertRaises(NotImplementedError):
+            inventions.extract_invention_ids("JAP=\n{\n}\n")
+
+    def test_unciv_reform_extraction_is_not_implemented(self):
+        with self.assertRaises(NotImplementedError):
+            unciv_reforms.extract_unciv_reforms("JAP=\n{\n}\n")
+
+    def test_build_inventions_map_is_not_implemented(self):
+        with self.assertRaises(NotImplementedError):
+            build_inventions_map.main(["--game-dir", "some/dir"])
 
 
 class TestMain(unittest.TestCase):
@@ -593,48 +619,48 @@ class TestMain(unittest.TestCase):
     def run_main(self, argv):
         with mock.patch.object(sys, "argv", argv):
             with redirect_stderr(io.StringIO()):
-                tracker.main()
+                main.main()
 
     def test_valid_once_calls_process_existing_saves(self):
-        argv = ["tracker.py", "--once", "--files", "autosave.v2", str(self.out)]
-        with mock.patch("tracker.process_existing_saves") as mock_process:
+        argv = ["main.py", "--once", "--files", "autosave.v2", str(self.out)]
+        with mock.patch("main.process_existing_saves") as mock_process:
             self.run_main(argv)
         mock_process.assert_called_once_with(self.out, ["autosave.v2"])
 
     def test_valid_watch_calls_watch(self):
-        argv = ["tracker.py", "--watch", str(self.out)]
-        with mock.patch("tracker.watch") as mock_watch:
+        argv = ["main.py", "--watch", str(self.out)]
+        with mock.patch("main.watch") as mock_watch:
             self.run_main(argv)
         mock_watch.assert_called_once_with(self.out)
 
     def test_once_without_files_errors(self):
-        argv = ["tracker.py", "--once", str(self.out)]
+        argv = ["main.py", "--once", str(self.out)]
         with self.assertRaises(SystemExit):
             self.run_main(argv)
 
     def test_files_without_once_errors(self):
-        argv = ["tracker.py", "--files", "autosave.v2", str(self.out)]
+        argv = ["main.py", "--files", "autosave.v2", str(self.out)]
         with self.assertRaises(SystemExit):
             self.run_main(argv)
 
     def test_once_and_watch_together_error(self):
-        argv = ["tracker.py", "--once", "--watch", str(self.out)]
+        argv = ["main.py", "--once", "--watch", str(self.out)]
         with self.assertRaises(SystemExit):
             self.run_main(argv)
 
     def test_unknown_save_file_name_errors(self):
-        argv = ["tracker.py", "--once", "--files", "bogus.v2", str(self.out)]
+        argv = ["main.py", "--once", "--files", "bogus.v2", str(self.out)]
         with self.assertRaises(SystemExit):
             self.run_main(argv)
 
     def test_empty_save_file_name_errors(self):
-        argv = ["tracker.py", "--once", "--files", "autosave.v2,", str(self.out)]
+        argv = ["main.py", "--once", "--files", "autosave.v2,", str(self.out)]
         with self.assertRaises(SystemExit):
             self.run_main(argv)
 
     def test_non_existent_output_directory_errors(self):
         argv = [
-            "tracker.py",
+            "main.py",
             "--once",
             "--files",
             "autosave.v2",
@@ -644,7 +670,7 @@ class TestMain(unittest.TestCase):
             self.run_main(argv)
 
     def test_no_mode_defaults_to_once_and_requires_files(self):
-        argv = ["tracker.py", str(self.out)]
+        argv = ["main.py", str(self.out)]
         with self.assertRaises(SystemExit):
             self.run_main(argv)
 

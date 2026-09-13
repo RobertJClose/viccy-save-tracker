@@ -42,11 +42,11 @@ Record the autosave file(s) you name and exit. You are responsible for
 picking the files that belong to the save game being tracked:
 
 ```bash
-python tracker.py --once --files autosave.v2 history\france
+python main.py --once --files autosave.v2 history\france
 
 # Backfill from the previous two autosaves (only correct if all three
 # files are from the save game being tracked).
-python tracker.py --once --files autosave.v2,oldautosave.v2,olderautosave.v2 history\france
+python main.py --once --files autosave.v2,oldautosave.v2,olderautosave.v2 history\france
 ```
 
 ### Watch mode
@@ -56,7 +56,7 @@ as soon as it is detected (after a short delay to let the game finish
 writing). Press **Ctrl+C** to stop.
 
 ```bash
-python tracker.py --watch history\france
+python main.py --watch history\france
 ```
 
 Only `autosave.v2` is watched. The rotated files (`oldautosave.v2`,
@@ -123,7 +123,9 @@ save games\
   oldautosave.v2
   olderautosave.v2
   tracker\
-    tracker.py
+    main.py
+    common.py
+    goods.py
     history\france\
       goods_prices.csv
       processed_dates.json

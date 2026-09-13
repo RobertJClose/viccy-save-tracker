@@ -17,7 +17,13 @@ save games\                <- Victoria II's save directory (parent of the repo)
   oldautosave.v2           <- previous autosave
   olderautosave.v2         <- two autosaves ago
   tracker\                 <- THIS REPO (the script lives here)
-    tracker.py
+    main.py                  <- entrypoint (CLI, watch loop, orchestration)
+    common.py                <- shared infra (paths, dates, processed-dates ledger)
+    goods.py                 <- goods-price extraction + CSV output
+    technologies.py          <- STUB: player tech extraction (NotImplementedError)
+    inventions.py            <- STUB: player invention extraction (NotImplementedError)
+    unciv_reforms.py         <- STUB: unciv reform extraction (NotImplementedError)
+    build_inventions_map.py  <- SKELETON: invention ID -> name mapping initialisation
     example.v2             <- example save for agents to inspect
   history\<output-dir>      <- user-chosen per-world output (see below)
     goods_prices.csv       <- output CSV (created at runtime)
@@ -32,15 +38,15 @@ The script lives **inside** the save directory, so it can locate the
 ```bash
 # One-shot: record the file(s) you name and exit. It is your
 # responsibility to pick the files that belong to this save game.
-python tracker.py --once --files autosave.v2 history\france
+python main.py --once --files autosave.v2 history\france
 
 # The same, but also backfill from the previous two autosaves (only
 # correct if all three files are from the save game being tracked).
-python tracker.py --once --files autosave.v2,oldautosave.v2,olderautosave.v2 history\france
+python main.py --once --files autosave.v2,oldautosave.v2,olderautosave.v2 history\france
 
 # Watch: poll the live autosave; new autosaves are processed as they
 # appear. Ctrl+C to stop.
-python tracker.py --watch history\france
+python main.py --watch history\france
 ```
 
 The output directory is **mandatory** and must already exist. It is the
@@ -55,7 +61,8 @@ If neither flag is given, `--once` is the default (and still requires
 
 ## Running tests
 
-Before and after any change to `tracker.py`, run the unit test suite from
+Before and after any change to the Python sources (`main.py`,
+`common.py`, `goods.py`, ...), run the unit test suite from
 the repository root:
 
 ```bash
@@ -126,11 +133,18 @@ If the file is missing or corrupt, the script starts with an empty set
 
 ## Design notes for future agents
 
-- **Single extraction helper:** There is exactly one parsing function,
-  `extract_goods`, which isolates the `price_pool` block and returns a
-  `{good: price}` dict. Good names are discovered dynamically from the
-  save rather than hardcoded, so late-game goods and modded goods are
-  tracked without code changes. Do not reintroduce per-good helpers.
+- **Single extraction helper per domain:** each extractable thing owns
+  exactly one parsing function in its module — `extract_goods` in
+  `goods.py` (isolates the `price_pool` block, returns `{good: price}`),
+  and later `extract_technologies`, `extract_invention_ids`,
+  `extract_unciv_reforms` in their modules. Good names are discovered
+  dynamically from the save rather than hardcoded, so late-game goods
+  and modded goods are tracked without code changes. Do not reintroduce
+  per-good helpers.
+- **One processed-dates ledger:** `processed_dates.json` is the single
+  source of truth for what has been tracked. Every module (goods today;
+  technologies, inventions, reforms in future) keys off the same
+  in-game-date set — do not add per-module cursors.
 - **Stdlib only:** The script uses no third-party packages.
 - **Encoding:** Save files are read as UTF-8 with `errors='replace'`
   (one bad byte must not abort the whole file).

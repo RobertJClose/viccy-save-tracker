@@ -1,126 +1,29 @@
 from __future__ import annotations
 
 import argparse
-import csv
-import json
-import re
 import sys
 import time
 from pathlib import Path
 
-
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
-# This script lives in:
-#
-#   ...\Victoria II\save games\your-repo\tracker.py
-#
-# Therefore:
-#
-#   REPO_DIR = save games\your-repo
-#   SAVE_DIR = save games
-#
-# The output directory (the CSV history and processed-dates ledger) is chosen
-# by the user at runtime and must match the save game being tracked.
-#
-REPO_DIR = Path(__file__).resolve().parent
-SAVE_DIR = REPO_DIR.parent
-
-OUTPUT_FILENAME = "goods_prices.csv"
-PROCESSED_FILENAME = "processed_dates.json"
-
-SAVE_FILES = [
-    "autosave.v2",
-    "oldautosave.v2",
-    "olderautosave.v2",
-]
-
-# Watch mode tracks only the live autosave. The rotated files are
-# deliberately ignored: after a new save game's first autosave, the game
-# cascades the previous session's saves into oldautosave.v2 /
-# olderautosave.v2, and recording those would pollute the current watch
-# with a different save game's data. Consequence: an autosave missed while
-# the watcher is down is not backfilled from the rotated files.
-WATCH_FILES = [
-    "autosave.v2",
-]
+from common import (
+    OUTPUT_FILENAME,
+    PROCESSED_FILENAME,
+    REPO_DIR,
+    SAVE_DIR,
+    SAVE_FILES,
+    WATCH_FILES,
+    extract_game_date,
+    load_processed_dates,
+    output_paths,
+    read_save,
+    save_processed_dates,
+)
+from goods import append_observations, extract_goods
 
 
 # ---------------------------------------------------------------------------
-# Save parsing
+# Save processing
 # ---------------------------------------------------------------------------
-
-def read_save(path: Path) -> str:
-    """
-    Read a Victoria II save file as text.
-
-    Victoria II saves are text-based. We use errors='replace' so that one
-    unusual byte will not prevent the entire save from being read.
-    """
-    return path.read_text(encoding="utf-8", errors="replace")
-
-
-def extract_game_date(text: str) -> str:
-    """
-    Extract the game's current date from the save header.
-
-    Example:
-        date="1836.4.1"
-
-    Returns:
-        1836-04-01
-    """
-    match = re.search(r'^date="(\d{4})\.(\d{1,2})\.(\d{1,2})"', text, re.MULTILINE)
-
-    if not match:
-        raise ValueError("Could not find the game date in the save.")
-
-    year, month, day = map(int, match.groups())
-
-    return f"{year:04d}-{month:02d}-{day:02d}"
-
-
-def extract_goods(text: str) -> dict[str, float]:
-    """
-    Extract every good price from worldmarket.price_pool.
-
-    We first isolate the price_pool block, then capture every pair
-    of good_name=price within it.
-
-    Example:
-        coal=2.33002
-        iron=3.53003
-
-    Returns:
-        {"coal": 2.33002, "iron": 3.53003, ...}
-    """
-
-    price_pool_match = re.search(
-        r'price_pool=\s*\{(.*?)\n\s*\}',
-        text,
-        re.DOTALL,
-    )
-
-    if not price_pool_match:
-        raise ValueError("Could not find worldmarket.price_pool.")
-
-    price_pool = price_pool_match.group(1)
-
-    goods: dict[str, float] = {}
-
-    for good, price in re.findall(
-        r'(\w+)=([-+]?(?:\d+(?:\.\d*)?|\.\d+))',
-        price_pool,
-    ):
-        goods[good] = float(price)
-
-    if not goods:
-        raise ValueError("No goods found in price_pool.")
-
-    return goods
-
 
 def parse_save(path: Path) -> tuple[str, dict[str, float]]:
     """
@@ -135,102 +38,6 @@ def parse_save(path: Path) -> tuple[str, dict[str, float]]:
 
     return game_date, goods
 
-
-# ---------------------------------------------------------------------------
-# Processed-date tracking
-# ---------------------------------------------------------------------------
-
-def load_processed_dates(processed_file: Path) -> set[str]:
-    """
-    Load dates that have already been exported.
-    """
-    if not processed_file.exists():
-        return set()
-
-    try:
-        data = json.loads(processed_file.read_text(encoding="utf-8"))
-
-        if not isinstance(data, list):
-            raise ValueError
-
-        return set(data)
-
-    except (json.JSONDecodeError, ValueError):
-        print(
-            f"Warning: {processed_file} is invalid. "
-            "Starting with no processed dates.",
-            file=sys.stderr,
-        )
-        return set()
-
-
-def save_processed_dates(processed_file: Path, dates: set[str]) -> None:
-    """
-    Save processed dates in a simple JSON file.
-    """
-    processed_file.write_text(
-        json.dumps(sorted(dates), indent=2),
-        encoding="utf-8",
-    )
-
-
-# ---------------------------------------------------------------------------
-# CSV handling
-# ---------------------------------------------------------------------------
-
-def append_observations(
-    output_file: Path,
-    game_date: str,
-    goods: dict[str, float],
-) -> None:
-    """
-    Append one row per good to goods_prices.csv.
-
-    CSV format:
-
-        date,good,price
-        1836-01-02,coal,2.33002
-        1836-01-02,iron,3.53003
-    """
-
-    file_exists = output_file.exists()
-
-    with output_file.open(
-        "a",
-        newline="",
-        encoding="utf-8",
-    ) as csv_file:
-
-        writer = csv.writer(csv_file)
-
-        if not file_exists:
-            writer.writerow(["date", "good", "price"])
-
-        for good in sorted(goods):
-            writer.writerow([
-                game_date,
-                good,
-                f"{goods[good]:.5f}",
-            ])
-
-
-# ---------------------------------------------------------------------------
-# Output paths
-# ---------------------------------------------------------------------------
-
-def output_paths(output_dir: Path) -> tuple[Path, Path]:
-    """
-    Given an output directory, return (output_file, processed_file).
-    """
-    return (
-        output_dir / OUTPUT_FILENAME,
-        output_dir / PROCESSED_FILENAME,
-    )
-
-
-# ---------------------------------------------------------------------------
-# Save processing
-# ---------------------------------------------------------------------------
 
 def process_save(
     path: Path,
