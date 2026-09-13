@@ -27,29 +27,39 @@ from technologies import (
     extract_technologies,
     load_technology_state,
 )
+from unciv_reforms import (
+    CHANGES_FILENAME as WESTERNISATION_CHANGES_FILENAME,
+    append_westernisation_changes,
+    extract_unciv_reforms,
+    load_unciv_reform_state,
+)
 
 
 # ---------------------------------------------------------------------------
 # Save processing
 # ---------------------------------------------------------------------------
 
-def parse_save(path: Path) -> tuple[str, dict[str, float], set[str]]:
+def parse_save(path: Path) -> tuple[str, dict[str, float], set[str], dict[str, str]]:
     """
     Parse a Victoria II save and return:
 
-        (game_date, {good: price, ...}, {unlocked technology, ...})
+        (game_date, {good: price, ...}, {unlocked technology, ...},
+         {uncivilised reform: level, ...})
 
-    Technologies belong to the player country (see the ``player=``
-    header); ``name={1 0.000}`` means unlocked.
+    Technologies and reforms belong to the player country (see the
+    ``player=`` header); ``name={1 0.000}`` means unlocked, and reform
+    levels (e.g. ``land_reform=no_land_reform``) are recorded raw.
     """
     text = read_save(path)
 
     game_date = extract_game_date(text)
     goods = extract_goods(text)
     player_tag = extract_player_tag(text)
-    technologies = extract_technologies(extract_country_block(text, player_tag))
+    country_block = extract_country_block(text, player_tag)
+    technologies = extract_technologies(country_block)
+    reforms = extract_unciv_reforms(country_block)
 
-    return game_date, goods, technologies
+    return game_date, goods, technologies, reforms
 
 
 def process_save(
@@ -68,7 +78,7 @@ def process_save(
         return False
 
     try:
-        game_date, goods, techs = parse_save(path)
+        game_date, goods, techs, reforms = parse_save(path)
 
     except (OSError, ValueError) as exc:
         print(f"Could not process {path.name}: {exc}")
@@ -80,13 +90,19 @@ def process_save(
 
     append_observations(output_file, game_date, goods)
 
-    # Technology state is derived by replaying the changes file, so no
-    # extra cursor is needed: processed_dates.json stays the single
+    # Discrete state is derived by replaying the changes files, so no
+    # extra cursors are needed: processed_dates.json stays the single
     # source of truth for what has been tracked.
     tech_file = processed_file.parent / TECHNOLOGY_CHANGES_FILENAME
     previous_techs = load_technology_state(tech_file)
     acquired, _ = append_technology_changes(
         tech_file, game_date, previous_techs, techs
+    )
+
+    reform_file = processed_file.parent / WESTERNISATION_CHANGES_FILENAME
+    previous_reforms = load_unciv_reform_state(reform_file)
+    changed_reforms = append_westernisation_changes(
+        reform_file, game_date, previous_reforms, reforms
     )
 
     processed_dates.add(game_date)
@@ -95,7 +111,8 @@ def process_save(
     print(
         f"Recorded {game_date}: "
         f"{len(goods)} goods, "
-        f"{len(techs)} technologies ({len(acquired)} new)"
+        f"{len(techs)} technologies ({len(acquired)} new), "
+        f"{len(reforms)} unciv reforms ({len(changed_reforms)} changed)"
     )
 
     return True
@@ -194,7 +211,10 @@ def watch(output_dir: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Track Victoria II good prices and player technology."
+        description=(
+            "Track Victoria II good prices, player technology "
+            "and uncivilised reforms."
+        ),
     )
 
     parser.add_argument(

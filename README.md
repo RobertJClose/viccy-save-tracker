@@ -1,9 +1,9 @@
 # Victoria II Tracker
 
 A small Python program that watches Victoria II autosaves and records
-the world-market good prices plus the player country's unlocked
-technologies to `.csv` files suitable for import into LibreOffice
-Calc.
+the world-market good prices, the player country's unlocked
+technologies, and its uncivilised reforms to `.csv` files suitable for
+import into LibreOffice Calc.
 
 ## Requirements
 
@@ -45,7 +45,8 @@ Calc.
 
 Both modes require an **output directory** that already exists. This
 directory is the "history" for a specific save game: it holds that
-world's `goods_prices.csv`, `technology_changes.csv`, and
+world's `goods_prices.csv`, `technology_changes.csv`,
+`westernisation_changes.csv`, and
 `processed_dates.json`. Point the script
 at the directory matching the save you are about to play.
 
@@ -86,8 +87,8 @@ the output directory for that world.
 
 ## Output
 
-The program writes two CSV files (created on first run) inside the
-output directory you specify. In both files, `date` is the in-game date
+The program writes three CSV files (created on first run) inside the
+output directory you specify. In all files, `date` is the in-game date
 (YYYY-MM-DD), not the real-world date.
 
 `goods_prices.csv`: for each in-game date, a row for **every** good
@@ -113,6 +114,21 @@ date,technology,old_value,new_value
 
 Replaying `technology_changes.csv` in date order reconstructs the
 unlocked set at any date; dates with no changes add no rows.
+
+`westernisation_changes.csv`: the player country's uncivilised reform
+levels as a change log — full levels on the first date tracked, then
+only changes (levels recorded raw; a vanished key means an empty new
+value):
+
+```csv
+date,reform,old_value,new_value
+1836-01-02,land_reform,,no_land_reform
+1836-05-03,land_reform,no_land_reform,land_reform_enacted
+```
+
+Replaying it in date order reconstructs the levels at any date; dates
+with no changes add no rows. Civilised nations have none of these keys,
+so their file holds just the header.
 
 The good list is taken straight from the save, so late-game goods (for
 example `automobiles`, `aeroplanes`, `radio`) appear automatically as
@@ -158,5 +174,6 @@ save games\
     history\france\
       goods_prices.csv
       technology_changes.csv
+      westernisation_changes.csv
       processed_dates.json
 ```
