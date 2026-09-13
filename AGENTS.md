@@ -9,6 +9,13 @@ LibreOffice Calc for visualisation and analysis.
 The tracker records **every** good's price found in
 `worldmarket.price_pool`. Each good is a row of `date,good,price`.
 
+It also records the **player's** unlocked technologies (player tag from
+the `player=` header; `technology={ ... }` inside that country's block,
+where `name={1 0.000}` means unlocked). Techs are discrete, so
+`technology_changes.csv` stores the full set once and only differences
+afterwards — replaying it in date order reconstructs the state at any
+time.
+
 ## Directory layout
 
 ```
@@ -18,15 +25,18 @@ save games\                <- Victoria II's save directory (parent of the repo)
   olderautosave.v2         <- two autosaves ago
   tracker\                 <- THIS REPO (the script lives here)
     main.py                  <- entrypoint (CLI, watch loop, orchestration)
-    common.py                <- shared infra (paths, dates, processed-dates ledger)
+    common.py                <- shared infra (paths, dates, processed-dates ledger,
+                               player tag + country-block isolation)
     goods.py                 <- goods-price extraction + CSV output
-    technologies.py          <- STUB: player tech extraction (NotImplementedError)
+    technologies.py          <- player tech extraction + changes CSV
+                               (snapshot first, deltas after)
     inventions.py            <- STUB: player invention extraction (NotImplementedError)
     unciv_reforms.py         <- STUB: unciv reform extraction (NotImplementedError)
     build_inventions_map.py  <- SKELETON: invention ID -> name mapping initialisation
     example.v2             <- example save for agents to inspect
   history\<output-dir>      <- user-chosen per-world output (see below)
     goods_prices.csv       <- output CSV (created at runtime)
+    technology_changes.csv <- tech change log (created at runtime)
     processed_dates.json   <- dedup ledger (created at runtime)
 ```
 
@@ -108,7 +118,9 @@ Each line inside the block is `good_name=decimal_price`.
 See `example.v2` for a full sample (start-of-game date, so no late-game
 goods or events).
 
-## CSV schema
+## CSV schemas
+
+Goods (`goods_prices.csv`):
 
 ```
 date,good,price
@@ -118,6 +130,18 @@ date,good,price
 `date` is the in-game date (YYYY-MM-DD), not the real-world date. It is
 the unique key — the script will never append a row for a date already
 recorded.
+
+Technologies (`technology_changes.csv`): one row per acquisition or
+loss, with `0` = absent and `1` = present:
+
+```
+date,technology,old_value,new_value
+1836-01-02,flintlock_rifles,0,1
+```
+
+The first date ever tracked writes the full snapshot (one `0 -> 1` row
+per unlocked tech, or just the header when none is unlocked); later
+dates append only changed techs, and unchanged dates append nothing.
 
 ## Dedup / processed dates
 
@@ -136,15 +160,25 @@ If the file is missing or corrupt, the script starts with an empty set
 - **Single extraction helper per domain:** each extractable thing owns
   exactly one parsing function in its module — `extract_goods` in
   `goods.py` (isolates the `price_pool` block, returns `{good: price}`),
-  and later `extract_technologies`, `extract_invention_ids`,
-  `extract_unciv_reforms` in their modules. Good names are discovered
+  `extract_technologies` in `technologies.py` (isolates the player
+  country's `technology` block via `common.extract_country_block`,
+  returns `{tech, ...}`; `name={1 0.000}` means unlocked, the value is
+  ignored), and later `extract_invention_ids`, `extract_unciv_reforms`
+  in their modules. Good names are discovered
   dynamically from the save rather than hardcoded, so late-game goods
   and modded goods are tracked without code changes. Do not reintroduce
   per-good helpers.
 - **One processed-dates ledger:** `processed_dates.json` is the single
-  source of truth for what has been tracked. Every module (goods today;
-  technologies, inventions, reforms in future) keys off the same
-  in-game-date set — do not add per-module cursors.
+  source of truth for what has been tracked. Every module (goods and
+  technologies today; inventions, reforms in future) keys off the same
+  in-game-date set — do not add per-module cursors. Technology state is
+  derived by replaying `technology_changes.csv`
+  (`load_technology_state`), not from a separate state file.
+- **Country blocks need brace matching:** nested `{...}` blocks cannot
+  be isolated with a single regex — use
+  `common.extract_braced_content`, which counts braces while skipping
+  quoted strings. Tags are anchored at column 0 so values like
+  `country="JAP"` never match.
 - **Stdlib only:** The script uses no third-party packages.
 - **Encoding:** Save files are read as UTF-8 with `errors='replace'`
   (one bad byte must not abort the whole file).

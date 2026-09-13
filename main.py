@@ -12,31 +12,44 @@ from common import (
     SAVE_DIR,
     SAVE_FILES,
     WATCH_FILES,
+    extract_country_block,
     extract_game_date,
+    extract_player_tag,
     load_processed_dates,
     output_paths,
     read_save,
     save_processed_dates,
 )
 from goods import append_observations, extract_goods
+from technologies import (
+    CHANGES_FILENAME as TECHNOLOGY_CHANGES_FILENAME,
+    append_technology_changes,
+    extract_technologies,
+    load_technology_state,
+)
 
 
 # ---------------------------------------------------------------------------
 # Save processing
 # ---------------------------------------------------------------------------
 
-def parse_save(path: Path) -> tuple[str, dict[str, float]]:
+def parse_save(path: Path) -> tuple[str, dict[str, float], set[str]]:
     """
     Parse a Victoria II save and return:
 
-        (game_date, {good: price, ...})
+        (game_date, {good: price, ...}, {unlocked technology, ...})
+
+    Technologies belong to the player country (see the ``player=``
+    header); ``name={1 0.000}`` means unlocked.
     """
     text = read_save(path)
 
     game_date = extract_game_date(text)
     goods = extract_goods(text)
+    player_tag = extract_player_tag(text)
+    technologies = extract_technologies(extract_country_block(text, player_tag))
 
-    return game_date, goods
+    return game_date, goods, technologies
 
 
 def process_save(
@@ -55,7 +68,7 @@ def process_save(
         return False
 
     try:
-        game_date, goods = parse_save(path)
+        game_date, goods, techs = parse_save(path)
 
     except (OSError, ValueError) as exc:
         print(f"Could not process {path.name}: {exc}")
@@ -67,12 +80,22 @@ def process_save(
 
     append_observations(output_file, game_date, goods)
 
+    # Technology state is derived by replaying the changes file, so no
+    # extra cursor is needed: processed_dates.json stays the single
+    # source of truth for what has been tracked.
+    tech_file = processed_file.parent / TECHNOLOGY_CHANGES_FILENAME
+    previous_techs = load_technology_state(tech_file)
+    acquired, _ = append_technology_changes(
+        tech_file, game_date, previous_techs, techs
+    )
+
     processed_dates.add(game_date)
     save_processed_dates(processed_file, processed_dates)
 
     print(
         f"Recorded {game_date}: "
-        f"{len(goods)} goods"
+        f"{len(goods)} goods, "
+        f"{len(techs)} technologies ({len(acquired)} new)"
     )
 
     return True
@@ -171,7 +194,7 @@ def watch(output_dir: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Track Victoria II good prices."
+        description="Track Victoria II good prices and player technology."
     )
 
     parser.add_argument(

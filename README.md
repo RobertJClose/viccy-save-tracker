@@ -1,7 +1,8 @@
-# Victoria II Price Tracker
+# Victoria II Tracker
 
-A small Python script that watches Victoria II autosaves and appends
-every good's price to a `.csv` file suitable for import into LibreOffice
+A small Python program that watches Victoria II autosaves and records
+the world-market good prices plus the player country's unlocked
+technologies to `.csv` files suitable for import into LibreOffice
 Calc.
 
 ## Requirements
@@ -73,9 +74,11 @@ the output directory for that world.
 
 ## Output
 
-The script writes `goods_prices.csv` (created on first run) inside the
-output directory you specify. For each in-game date it records a row for
-**every** good found in `worldmarket.price_pool`:
+The program writes two CSV files (created on first run) inside the
+output directory you specify.
+
+`goods_prices.csv`: for each in-game date, a row for **every** good
+found in `worldmarket.price_pool`:
 
 ```csv
 date,good,price
@@ -84,6 +87,19 @@ date,good,price
 1836-02-01,coal,2.60028
 1836-02-01,iron,3.61029
 ```
+
+`technology_changes.csv`: the player country's unlocked technologies
+as a change log — the full set on the first date tracked, then only
+acquisitions and losses (`0` = absent, `1` = present):
+
+```csv
+date,technology,old_value,new_value
+1836-01-02,flintlock_rifles,0,1
+1836-05-03,clean_coal,0,1
+```
+
+Replaying `technology_changes.csv` in date order reconstructs the
+unlocked set at any date; dates with no changes add no rows.
 
 `date` is the in-game date (YYYY-MM-DD), not the real-world date. The
 good list is taken straight from the save, so late-game goods (for

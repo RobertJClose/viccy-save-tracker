@@ -60,7 +60,16 @@ worldmarket=
 \t\tcoal=1802.88763
 \t}
 }
+JAP=
+{
+\ttechnology=
+\t{
+\t\tflintlock_rifles={1 0.000}
+\t}
+}
 """
+
+MINIMAL_TECHS = {"flintlock_rifles"}
 
 MINIMAL_GOODS = {
     "coal": 2.33002,
@@ -72,6 +81,7 @@ MINIMAL_GOODS = {
 
 # Same in-game date but different prices: dedup must key on the date alone.
 OLDER_SAVE = """date="1836.1.2"
+player="JAP"
 worldmarket=
 {
 \tprice_pool=
@@ -81,6 +91,12 @@ worldmarket=
 \t\ttropical_wood=7.77
 \t\tmachine_parts=6.66
 \t\tclipper_convoy=5.55
+\t}
+}
+JAP=
+{
+\ttechnology=
+\t{
 \t}
 }
 """
@@ -213,12 +229,13 @@ class TestParseSave(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "autosave.v2"
             p.write_text(MINIMAL_SAVE, encoding="utf-8")
-            game_date, result = main.parse_save(p)
+            game_date, result, techs = main.parse_save(p)
             self.assertEqual(game_date, "1836-01-02")
             self.assertEqual(result, MINIMAL_GOODS)
+            self.assertEqual(techs, MINIMAL_TECHS)
 
     def test_parses_the_real_example_save(self):
-        game_date, result = main.parse_save(EXAMPLE_SAVE)
+        game_date, result, techs = main.parse_save(EXAMPLE_SAVE)
         self.assertEqual(game_date, "1836-01-02")
         self.assertEqual(len(result), 48)
         # The good list is discovered from the save: late-game goods appear.
@@ -226,6 +243,8 @@ class TestParseSave(unittest.TestCase):
         self.assertEqual(result["furniture"], 4.93002)
         self.assertEqual(result["aeroplanes"], 110.0)
         self.assertEqual(result["radio"], 16.0)
+        # JAP starts with no unlocked technologies.
+        self.assertEqual(techs, set())
 
 
 class TestProcessedDates(unittest.TestCase):
@@ -332,6 +351,225 @@ class TestAppendObservations(unittest.TestCase):
             self.assertEqual(read_csv(out), [["date", "good", "price"]])
 
 
+class TestExtractPlayerTag(unittest.TestCase):
+
+    def test_returns_player_tag(self):
+        self.assertEqual(common.extract_player_tag(MINIMAL_SAVE), "JAP")
+
+    def test_missing_player_raises(self):
+        with self.assertRaises(ValueError):
+            common.extract_player_tag('date="1836.1.2"\n')
+
+    def test_indented_player_line_is_not_matched(self):
+        with self.assertRaises(ValueError):
+            common.extract_player_tag('\tplayer="JAP"\n')
+
+
+class TestExtractCountryBlock(unittest.TestCase):
+
+    def test_isolates_tag_block_at_column_zero(self):
+        text = (
+            'player="JAP"\n'
+            'country="JAP"\n'
+            "JAP=\n"
+            "{\n"
+            "\ttechnology=\n"
+            "\t{\n"
+            "\t}\n"
+            "}\n"
+        )
+        block = common.extract_country_block(text, "JAP")
+        self.assertIn("technology=", block)
+        self.assertNotIn("player=", block)
+        self.assertNotIn("country=", block)
+
+    def test_missing_tag_raises(self):
+        with self.assertRaises(ValueError):
+            common.extract_country_block('player="JAP"\n', "JAP")
+
+    def test_unbalanced_braces_raise(self):
+        with self.assertRaises(ValueError):
+            common.extract_country_block("JAP=\n{\n\ttechnology=\n", "JAP")
+
+
+class TestExtractTechnologies(unittest.TestCase):
+
+    def test_extracts_unlocked_names_ignoring_values(self):
+        block = (
+            "technology=\n"
+            "{\n"
+            "\tflintlock_rifles={1 0.000}\n"
+            "\tclean_coal={1 0.000}\n"
+            "}\n"
+        )
+        self.assertEqual(
+            technologies.extract_technologies(block),
+            {"flintlock_rifles", "clean_coal"},
+        )
+
+    def test_empty_block_yields_empty_set(self):
+        self.assertEqual(
+            technologies.extract_technologies("technology=\n{\n}\n"),
+            set(),
+        )
+
+    def test_research_block_is_ignored(self):
+        block = (
+            "research=\n"
+            "{\n"
+            "\ttechnology=romanticism\n"
+            "}\n"
+            "technology=\n"
+            "{\n"
+            "\tflintlock_rifles={1 0.000}\n"
+            "}\n"
+        )
+        self.assertEqual(
+            technologies.extract_technologies(block),
+            {"flintlock_rifles"},
+        )
+
+    def test_missing_block_raises(self):
+        with self.assertRaises(ValueError):
+            technologies.extract_technologies("human=yes\n")
+
+    def test_real_example_save_eng_block(self):
+        text = EXAMPLE_SAVE.read_text(encoding="utf-8", errors="replace")
+        block = common.extract_country_block(text, "ENG")
+        techs = technologies.extract_technologies(block)
+        self.assertEqual(len(techs), 35)
+        self.assertIn("flintlock_rifles", techs)
+        self.assertIn("clean_coal", techs)
+        # Currently being researched, not unlocked.
+        self.assertNotIn("iron_muzzle_loaded_artillery", techs)
+
+
+class TestTechnologyChanges(unittest.TestCase):
+
+    def test_first_date_writes_snapshot(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "technology_changes.csv"
+            acquired, lost = technologies.append_technology_changes(
+                out, "1836-01-02", set(), {"clean_coal", "flintlock_rifles"}
+            )
+            self.assertEqual(acquired, {"clean_coal", "flintlock_rifles"})
+            self.assertEqual(lost, set())
+            self.assertEqual(
+                read_csv(out),
+                [
+                    ["date", "technology", "old_value", "new_value"],
+                    ["1836-01-02", "clean_coal", "0", "1"],
+                    ["1836-01-02", "flintlock_rifles", "0", "1"],
+                ],
+            )
+
+    def test_first_date_with_no_techs_writes_header_only(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "technology_changes.csv"
+            acquired, lost = technologies.append_technology_changes(
+                out, "1836-01-02", set(), set()
+            )
+            self.assertEqual(acquired, set())
+            self.assertEqual(lost, set())
+            self.assertEqual(
+                read_csv(out),
+                [["date", "technology", "old_value", "new_value"]],
+            )
+
+    def test_later_date_appends_only_deltas(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "technology_changes.csv"
+            technologies.append_technology_changes(
+                out, "1836-01-02", set(), {"flintlock_rifles"}
+            )
+            acquired, lost = technologies.append_technology_changes(
+                out,
+                "1836-02-01",
+                {"flintlock_rifles"},
+                {"flintlock_rifles", "clean_coal"},
+            )
+            self.assertEqual(acquired, {"clean_coal"})
+            self.assertEqual(lost, set())
+            self.assertEqual(
+                read_csv(out),
+                [
+                    ["date", "technology", "old_value", "new_value"],
+                    ["1836-01-02", "flintlock_rifles", "0", "1"],
+                    ["1836-02-01", "clean_coal", "0", "1"],
+                ],
+            )
+
+    def test_lost_technology_is_recorded(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "technology_changes.csv"
+            technologies.append_technology_changes(
+                out, "1836-01-02", set(), {"a_tech", "b_tech"}
+            )
+            acquired, lost = technologies.append_technology_changes(
+                out, "1836-02-01", {"a_tech", "b_tech"}, {"a_tech"}
+            )
+            self.assertEqual(acquired, set())
+            self.assertEqual(lost, {"b_tech"})
+            rows = read_csv(out)
+            self.assertIn(["1836-02-01", "b_tech", "1", "0"], rows)
+            self.assertEqual(
+                technologies.load_technology_state(out), {"a_tech"}
+            )
+
+    def test_unchanged_date_appends_nothing(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "technology_changes.csv"
+            technologies.append_technology_changes(
+                out, "1836-01-02", set(), {"flintlock_rifles"}
+            )
+            before = read_csv(out)
+            acquired, lost = technologies.append_technology_changes(
+                out,
+                "1836-02-01",
+                {"flintlock_rifles"},
+                {"flintlock_rifles"},
+            )
+            self.assertEqual(acquired, set())
+            self.assertEqual(lost, set())
+            self.assertEqual(read_csv(out), before)
+
+    def test_replay_reconstructs_state(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "technology_changes.csv"
+            technologies.append_technology_changes(
+                out, "1836-01-02", set(), set()
+            )
+            technologies.append_technology_changes(
+                out, "1836-02-01", set(), {"a_tech", "b_tech"}
+            )
+            technologies.append_technology_changes(
+                out, "1836-03-01", {"a_tech", "b_tech"}, {"b_tech", "c_tech"}
+            )
+            self.assertEqual(
+                technologies.load_technology_state(out),
+                {"b_tech", "c_tech"},
+            )
+
+    def test_missing_file_replays_to_empty(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(
+                technologies.load_technology_state(
+                    Path(d) / "technology_changes.csv"
+                ),
+                set(),
+            )
+
+    def test_corrupt_file_warns_and_replays_to_empty(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "technology_changes.csv"
+            out.write_text("date,technology\n1836-01-02\n", encoding="utf-8")
+            err = io.StringIO()
+            with redirect_stderr(err):
+                result = technologies.load_technology_state(out)
+            self.assertEqual(result, set())
+            self.assertIn("Warning", err.getvalue())
+
+
 class TestOutputPaths(unittest.TestCase):
 
     def test_returns_csv_and_processed_paths(self):
@@ -364,6 +602,7 @@ class TestProcessSave(unittest.TestCase):
             save.write_text("no date or price pool here\n", encoding="utf-8")
             output = root / "goods.csv"
             processed = root / "processed.json"
+            tech_changes = root / "technology_changes.csv"
             out = io.StringIO()
             with redirect_stdout(out):
                 result = main.process_save(
@@ -373,6 +612,7 @@ class TestProcessSave(unittest.TestCase):
             self.assertIn("Could not process bad.v2", out.getvalue())
             self.assertFalse(output.exists())
             self.assertFalse(processed.exists())
+            self.assertFalse(tech_changes.exists())
 
     def test_new_date_is_recorded(self):
         with tempfile.TemporaryDirectory() as d:
@@ -381,6 +621,7 @@ class TestProcessSave(unittest.TestCase):
             save.write_text(MINIMAL_SAVE, encoding="utf-8")
             output = root / "goods.csv"
             processed = root / "processed.json"
+            tech_changes = root / "technology_changes.csv"
             processed_dates = set()
 
             out = io.StringIO()
@@ -391,9 +632,18 @@ class TestProcessSave(unittest.TestCase):
 
             self.assertTrue(result)
             self.assertIn(
-                "Recorded 1836-01-02: 5 goods", out.getvalue()
+                "Recorded 1836-01-02: 5 goods, 1 technologies (1 new)",
+                out.getvalue(),
             )
             self.assertEqual(len(read_csv(output)), len(MINIMAL_GOODS) + 1)
+            # First tech-tracked date writes the full snapshot.
+            self.assertEqual(
+                read_csv(tech_changes),
+                [
+                    ["date", "technology", "old_value", "new_value"],
+                    ["1836-01-02", "flintlock_rifles", "0", "1"],
+                ],
+            )
             self.assertIn("1836-01-02", processed_dates)
             self.assertEqual(
                 json.loads(processed.read_text(encoding="utf-8")),
@@ -407,12 +657,14 @@ class TestProcessSave(unittest.TestCase):
             save.write_text(MINIMAL_SAVE, encoding="utf-8")
             output = root / "goods.csv"
             processed = root / "processed.json"
+            tech_changes = root / "technology_changes.csv"
             processed_dates = set()
 
             with redirect_stdout(io.StringIO()):
                 main.process_save(save, output, processed, processed_dates)
 
             rows_before = read_csv(output)
+            tech_rows_before = read_csv(tech_changes)
 
             with redirect_stdout(io.StringIO()):
                 result = main.process_save(
@@ -421,6 +673,7 @@ class TestProcessSave(unittest.TestCase):
 
             self.assertFalse(result)
             self.assertEqual(read_csv(output), rows_before)
+            self.assertEqual(read_csv(tech_changes), tech_rows_before)
 
 
 class TestProcessExistingSaves(unittest.TestCase):
@@ -446,6 +699,13 @@ class TestProcessExistingSaves(unittest.TestCase):
             self.assertEqual(
                 json.loads((out / "processed_dates.json").read_text(encoding="utf-8")),
                 ["1836-01-02"],
+            )
+            self.assertEqual(
+                read_csv(out / "technology_changes.csv"),
+                [
+                    ["date", "technology", "old_value", "new_value"],
+                    ["1836-01-02", "flintlock_rifles", "0", "1"],
+                ],
             )
 
     def test_missing_file_prints_not_found(self):
@@ -589,10 +849,6 @@ class TestConstants(unittest.TestCase):
 
 class TestStubs(unittest.TestCase):
     """Future tracking modules exist but are not implemented yet."""
-
-    def test_technology_extraction_is_not_implemented(self):
-        with self.assertRaises(NotImplementedError):
-            technologies.extract_technologies("JAP=\n{\n}\n")
 
     def test_invention_extraction_is_not_implemented(self):
         with self.assertRaises(NotImplementedError):
