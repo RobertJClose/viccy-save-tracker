@@ -25,6 +25,14 @@ from pathlib import Path
 REPO_DIR = Path(__file__).resolve().parent
 SAVE_DIR = REPO_DIR.parent
 
+# User setting: edit this to point at your Victoria II installation.
+# Used by initialise.py to locate game data (e.g. inventions/*.txt);
+# --game-dir on the command line overrides it.
+GAME_DIR = Path(r"C:\Program Files (x86)\Steam\steamapps\common\Victoria 2")
+
+# Default vanilla invention ID -> name mapping (committed to the repo).
+INVENTIONS_MAP_FILE = REPO_DIR / "inventions_map.json"
+
 OUTPUT_FILENAME = "goods_prices.csv"
 PROCESSED_FILENAME = "processed_dates.json"
 

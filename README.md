@@ -30,11 +30,23 @@ Calc.
    .venv\Scripts\activate
    ```
 
+3. (One-off) build the invention ID → name mapping from your game
+   install (already committed for vanilla; re-run only for modded
+   installs):
+
+   ```bash
+   # Edit GAME_DIR in common.py first, or pass --game-dir explicitly.
+   python initialise.py --check-save example.v2
+   ```
+
+   `python initialise.py --list` shows the available setup tasks.
+
 ## Usage
 
 Both modes require an **output directory** that already exists. This
 directory is the "history" for a specific save game: it holds that
-world's `goods_prices.csv` and `processed_dates.json`. Point the script
+world's `goods_prices.csv`, `technology_changes.csv`, and
+`processed_dates.json`. Point the script
 at the directory matching the save you are about to play.
 
 ### One-shot
@@ -75,7 +87,8 @@ the output directory for that world.
 ## Output
 
 The program writes two CSV files (created on first run) inside the
-output directory you specify.
+output directory you specify. In both files, `date` is the in-game date
+(YYYY-MM-DD), not the real-world date.
 
 `goods_prices.csv`: for each in-game date, a row for **every** good
 found in `worldmarket.price_pool`:
@@ -101,27 +114,21 @@ date,technology,old_value,new_value
 Replaying `technology_changes.csv` in date order reconstructs the
 unlocked set at any date; dates with no changes add no rows.
 
-`date` is the in-game date (YYYY-MM-DD), not the real-world date. The
-good list is taken straight from the save, so late-game goods (for
+The good list is taken straight from the save, so late-game goods (for
 example `automobiles`, `aeroplanes`, `radio`) appear automatically as
 they are unlocked.
 
 ### Importing into LibreOffice Calc
 
-1. Open LibreOffice Calc.
-2. **File → Open** and select `goods_prices.csv`.
-3. In the Text Import dialog:
-   - Character set: Unicode (UTF-8)
-   - Separator: Comma
-4. Click **OK**.
-
-The data can now be plotted or analysed like any other spreadsheet.
+This section is planned and not yet ready.
 
 ## Dedup
 
 A `processed_dates.json` file is maintained automatically in the output
 directory. It stores in-game dates that have already been exported so
-that repeated polls never produce duplicate rows.
+that repeated polls never produce duplicate rows. A date is recorded
+for all categories together or not at all — `processed_dates.json` is
+the single source of truth for what has been tracked.
 
 If this file becomes corrupt, simply delete it — the script will
 recreate it on the next run (with a warning on stderr).
@@ -142,7 +149,14 @@ save games\
     main.py
     common.py
     goods.py
+    technologies.py
+    inventions.py
+    unciv_reforms.py
+    initialise.py
+    init_inventions_map.py
+    inventions_map.json
     history\france\
       goods_prices.csv
+      technology_changes.csv
       processed_dates.json
 ```

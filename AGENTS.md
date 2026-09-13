@@ -26,13 +26,16 @@ save games\                <- Victoria II's save directory (parent of the repo)
   tracker\                 <- THIS REPO (the script lives here)
     main.py                  <- entrypoint (CLI, watch loop, orchestration)
     common.py                <- shared infra (paths, dates, processed-dates ledger,
-                               player tag + country-block isolation)
+                               player tag + country-block isolation; GAME_DIR
+                               setting for the game install)
     goods.py                 <- goods-price extraction + CSV output
     technologies.py          <- player tech extraction + changes CSV
                                (snapshot first, deltas after)
     inventions.py            <- STUB: player invention extraction (NotImplementedError)
     unciv_reforms.py         <- STUB: unciv reform extraction (NotImplementedError)
-    build_inventions_map.py  <- SKELETON: invention ID -> name mapping initialisation
+    initialise.py            <- one-shot setup dispatcher (run manually)
+    init_inventions_map.py   <- one-shot: invention ID -> name mapping builder
+    inventions_map.json      <- committed vanilla mapping (generated, index == ID)
     example.v2             <- example save for agents to inspect
   history\<output-dir>      <- user-chosen per-world output (see below)
     goods_prices.csv       <- output CSV (created at runtime)
@@ -179,6 +182,18 @@ If the file is missing or corrupt, the script starts with an empty set
   `common.extract_braced_content`, which counts braces while skipping
   quoted strings. Tags are anchored at column 0 so values like
   `country="JAP"` never match.
+- **Invention IDs are 1-based declaration order:** save-file invention
+  IDs index the game install's `inventions/*.txt` files read in sorted
+  filename order, top-level `name = {` blocks in file order. The parser
+  (`init_inventions_map.py`) strips `#` comments first (commented-out
+  inventions take no ID) and skips nested blocks, so nested
+  `invention = <name>` cross-references are never collected. Names may
+  contain `:`, `.` and leading digits (`genetics:_heredity`,
+  `15_inch_main_armament`). `inventions_map.json` is generated once via
+  `python initialise.py --check-save example.v2` (validates count ==
+  max save ID plus anchor IDs) and committed as the vanilla default; a
+  modded install re-runs with `--game-dir`/`--output`. `GAME_DIR` in
+  `common.py` is the user-edited install root.
 - **Stdlib only:** The script uses no third-party packages.
 - **Encoding:** Save files are read as UTF-8 with `errors='replace'`
   (one bad byte must not abort the whole file).
