@@ -2,7 +2,7 @@
 
 A small Python program that watches Victoria II autosaves and records
 the world-market good prices, the player country's unlocked
-technologies, and its uncivilised reforms to `.csv` files suitable for
+technologies, and its westernisation to `.csv` files suitable for
 import into LibreOffice Calc.
 
 ## Requirements
@@ -115,13 +115,13 @@ date,technology,old_value,new_value
 Replaying `technology_changes.csv` in date order reconstructs the
 unlocked set at any date; dates with no changes add no rows.
 
-`westernisation_changes.csv`: the player country's uncivilised reform
+`westernisation_changes.csv`: the player country's westernisation
 levels as a change log — full levels on the first date tracked, then
 only changes (levels recorded raw; a vanished key means an empty new
 value):
 
 ```csv
-date,reform,old_value,new_value
+date,westernisation,old_value,new_value
 1836-01-02,land_reform,,no_land_reform
 1836-05-03,land_reform,no_land_reform,land_reform_enacted
 ```
@@ -166,8 +166,8 @@ save games\
     common.py
     goods.py
     technologies.py
+    westernisation.py
     inventions.py
-    unciv_reforms.py
     initialise.py
     init_inventions_map.py
     inventions_map.json

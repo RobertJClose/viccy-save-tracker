@@ -27,7 +27,7 @@ import goods
 import inventions
 import main
 import technologies
-import unciv_reforms
+import westernisation
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -75,7 +75,7 @@ JAP=
 
 MINIMAL_TECHS = {"flintlock_rifles"}
 
-MINIMAL_REFORMS = {
+MINIMAL_WESTERNISATION = {
     "land_reform": "no_land_reform",
     "army_schools": "no_army_schools",
 }
@@ -239,14 +239,14 @@ class TestParseSave(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "autosave.v2"
             p.write_text(MINIMAL_SAVE, encoding="utf-8")
-            game_date, result, techs, reforms = main.parse_save(p)
+            game_date, result, techs, westernisation = main.parse_save(p)
             self.assertEqual(game_date, "1836-01-02")
             self.assertEqual(result, MINIMAL_GOODS)
             self.assertEqual(techs, MINIMAL_TECHS)
-            self.assertEqual(reforms, MINIMAL_REFORMS)
+            self.assertEqual(westernisation, MINIMAL_WESTERNISATION)
 
     def test_parses_the_real_example_save(self):
-        game_date, result, techs, reforms = main.parse_save(EXAMPLE_SAVE)
+        game_date, result, techs, westernisation = main.parse_save(EXAMPLE_SAVE)
         self.assertEqual(game_date, "1836-01-02")
         self.assertEqual(len(result), 48)
         # The good list is discovered from the save: late-game goods appear.
@@ -256,10 +256,10 @@ class TestParseSave(unittest.TestCase):
         self.assertEqual(result["radio"], 16.0)
         # JAP starts with no unlocked technologies.
         self.assertEqual(techs, set())
-        # ...but with all 15 uncivilised reforms at their base levels.
-        self.assertEqual(len(reforms), 15)
-        self.assertEqual(reforms["land_reform"], "no_land_reform")
-        self.assertEqual(reforms["foreign_navies"], "no_foreign_navies")
+        # ...but with all 15 westernisation levels at their base.
+        self.assertEqual(len(westernisation), 15)
+        self.assertEqual(westernisation["land_reform"], "no_land_reform")
+        self.assertEqual(westernisation["foreign_navies"], "no_foreign_navies")
 
 
 class TestProcessedDates(unittest.TestCase):
@@ -585,7 +585,7 @@ class TestTechnologyChanges(unittest.TestCase):
             self.assertIn("Warning", err.getvalue())
 
 
-class TestExtractUncivReforms(unittest.TestCase):
+class TestExtractWesternisation(unittest.TestCase):
 
     def test_extracts_present_levels(self):
         block = (
@@ -593,7 +593,7 @@ class TestExtractUncivReforms(unittest.TestCase):
             "army_schools=no_army_schools\n"
         )
         self.assertEqual(
-            unciv_reforms.extract_unciv_reforms(block),
+            westernisation.extract_westernisation(block),
             {
                 "land_reform": "no_land_reform",
                 "army_schools": "no_army_schools",
@@ -601,36 +601,36 @@ class TestExtractUncivReforms(unittest.TestCase):
         )
 
     def test_missing_keys_are_skipped_not_errors(self):
-        # A civilised nation's block has none of the unciv keys.
+        # A civilised nation's block has none of the westernisation keys.
         self.assertEqual(
-            unciv_reforms.extract_unciv_reforms(
+            westernisation.extract_westernisation(
                 "wage_reform=no_minimum_wage\nschool_reforms=low_schools\n"
             ),
             {},
         )
 
     def test_empty_block_yields_empty_dict(self):
-        self.assertEqual(unciv_reforms.extract_unciv_reforms(""), {})
+        self.assertEqual(westernisation.extract_westernisation(""), {})
 
     def test_key_match_is_exact(self):
         # A longer key name sharing a prefix must not match.
         block = "land_reform_extra=no_land_reform\n"
-        self.assertEqual(unciv_reforms.extract_unciv_reforms(block), {})
+        self.assertEqual(westernisation.extract_westernisation(block), {})
 
     def test_real_example_save_jap_block(self):
         text = EXAMPLE_SAVE.read_text(encoding="utf-8", errors="replace")
         block = common.extract_country_block(text, "JAP")
-        reforms = unciv_reforms.extract_unciv_reforms(block)
-        self.assertEqual(len(reforms), 15)
+        levels = westernisation.extract_westernisation(block)
+        self.assertEqual(len(levels), 15)
         self.assertTrue(
-            all(value.startswith("no_") for value in reforms.values())
+            all(value.startswith("no_") for value in levels.values())
         )
-        self.assertEqual(reforms["land_reform"], "no_land_reform")
+        self.assertEqual(levels["land_reform"], "no_land_reform")
 
     def test_real_example_save_eng_block_is_empty(self):
         text = EXAMPLE_SAVE.read_text(encoding="utf-8", errors="replace")
         block = common.extract_country_block(text, "ENG")
-        self.assertEqual(unciv_reforms.extract_unciv_reforms(block), {})
+        self.assertEqual(westernisation.extract_westernisation(block), {})
 
 
 class TestWesternisationChanges(unittest.TestCase):
@@ -638,7 +638,7 @@ class TestWesternisationChanges(unittest.TestCase):
     def test_first_date_writes_snapshot(self):
         with tempfile.TemporaryDirectory() as d:
             out = Path(d) / "westernisation_changes.csv"
-            changed = unciv_reforms.append_westernisation_changes(
+            changed = westernisation.append_westernisation_changes(
                 out,
                 "1836-01-02",
                 {},
@@ -657,34 +657,34 @@ class TestWesternisationChanges(unittest.TestCase):
             self.assertEqual(
                 read_csv(out),
                 [
-                    ["date", "reform", "old_value", "new_value"],
+                    ["date", "westernisation", "old_value", "new_value"],
                     ["1836-01-02", "army_schools", "", "no_army_schools"],
                     ["1836-01-02", "land_reform", "", "no_land_reform"],
                 ],
             )
 
-    def test_first_date_with_no_reforms_writes_header_only(self):
+    def test_first_date_with_no_westernisation_writes_header_only(self):
         with tempfile.TemporaryDirectory() as d:
             out = Path(d) / "westernisation_changes.csv"
-            changed = unciv_reforms.append_westernisation_changes(
+            changed = westernisation.append_westernisation_changes(
                 out, "1836-01-02", {}, {}
             )
             self.assertEqual(changed, {})
             self.assertEqual(
                 read_csv(out),
-                [["date", "reform", "old_value", "new_value"]],
+                [["date", "westernisation", "old_value", "new_value"]],
             )
 
     def test_later_date_appends_only_deltas(self):
         with tempfile.TemporaryDirectory() as d:
             out = Path(d) / "westernisation_changes.csv"
-            unciv_reforms.append_westernisation_changes(
+            westernisation.append_westernisation_changes(
                 out,
                 "1836-01-02",
                 {},
                 {"land_reform": "no_land_reform"},
             )
-            changed = unciv_reforms.append_westernisation_changes(
+            changed = westernisation.append_westernisation_changes(
                 out,
                 "1836-02-01",
                 {"land_reform": "no_land_reform"},
@@ -703,7 +703,7 @@ class TestWesternisationChanges(unittest.TestCase):
             self.assertEqual(
                 read_csv(out),
                 [
-                    ["date", "reform", "old_value", "new_value"],
+                    ["date", "westernisation", "old_value", "new_value"],
                     ["1836-01-02", "land_reform", "", "no_land_reform"],
                     ["1836-02-01", "army_schools", "", "no_army_schools"],
                     [
@@ -718,13 +718,13 @@ class TestWesternisationChanges(unittest.TestCase):
     def test_disappeared_key_is_recorded(self):
         with tempfile.TemporaryDirectory() as d:
             out = Path(d) / "westernisation_changes.csv"
-            unciv_reforms.append_westernisation_changes(
+            westernisation.append_westernisation_changes(
                 out,
                 "1836-01-02",
                 {},
                 {"land_reform": "no_land_reform"},
             )
-            changed = unciv_reforms.append_westernisation_changes(
+            changed = westernisation.append_westernisation_changes(
                 out, "1836-02-01", {"land_reform": "no_land_reform"}, {}
             )
             self.assertEqual(
@@ -732,19 +732,19 @@ class TestWesternisationChanges(unittest.TestCase):
             )
             rows = read_csv(out)
             self.assertIn(["1836-02-01", "land_reform", "no_land_reform", ""], rows)
-            self.assertEqual(unciv_reforms.load_unciv_reform_state(out), {})
+            self.assertEqual(westernisation.load_westernisation_state(out), {})
 
     def test_unchanged_date_appends_nothing(self):
         with tempfile.TemporaryDirectory() as d:
             out = Path(d) / "westernisation_changes.csv"
-            unciv_reforms.append_westernisation_changes(
+            westernisation.append_westernisation_changes(
                 out,
                 "1836-01-02",
                 {},
                 {"land_reform": "no_land_reform"},
             )
             before = read_csv(out)
-            changed = unciv_reforms.append_westernisation_changes(
+            changed = westernisation.append_westernisation_changes(
                 out,
                 "1836-02-01",
                 {"land_reform": "no_land_reform"},
@@ -756,30 +756,30 @@ class TestWesternisationChanges(unittest.TestCase):
     def test_replay_reconstructs_state(self):
         with tempfile.TemporaryDirectory() as d:
             out = Path(d) / "westernisation_changes.csv"
-            unciv_reforms.append_westernisation_changes(
+            westernisation.append_westernisation_changes(
                 out, "1836-01-02", {}, {}
             )
-            unciv_reforms.append_westernisation_changes(
+            westernisation.append_westernisation_changes(
                 out,
                 "1836-02-01",
                 {},
                 {"a_reform": "no_a", "b_reform": "no_b"},
             )
-            unciv_reforms.append_westernisation_changes(
+            westernisation.append_westernisation_changes(
                 out,
                 "1836-03-01",
                 {"a_reform": "no_a", "b_reform": "no_b"},
                 {"b_reform": "yes_b"},
             )
             self.assertEqual(
-                unciv_reforms.load_unciv_reform_state(out),
+                westernisation.load_westernisation_state(out),
                 {"b_reform": "yes_b"},
             )
 
     def test_missing_file_replays_to_empty(self):
         with tempfile.TemporaryDirectory() as d:
             self.assertEqual(
-                unciv_reforms.load_unciv_reform_state(
+                westernisation.load_westernisation_state(
                     Path(d) / "westernisation_changes.csv"
                 ),
                 {},
@@ -791,7 +791,7 @@ class TestWesternisationChanges(unittest.TestCase):
             out.write_text("date,reform\n1836-01-02\n", encoding="utf-8")
             err = io.StringIO()
             with redirect_stderr(err):
-                result = unciv_reforms.load_unciv_reform_state(out)
+                result = westernisation.load_westernisation_state(out)
             self.assertEqual(result, {})
             self.assertIn("Warning", err.getvalue())
 
@@ -829,7 +829,7 @@ class TestProcessSave(unittest.TestCase):
             output = root / "goods.csv"
             processed = root / "processed.json"
             tech_changes = root / "technology_changes.csv"
-            reform_changes = root / "westernisation_changes.csv"
+            westernisation_changes = root / "westernisation_changes.csv"
             out = io.StringIO()
             with redirect_stdout(out):
                 result = main.process_save(
@@ -840,7 +840,7 @@ class TestProcessSave(unittest.TestCase):
             self.assertFalse(output.exists())
             self.assertFalse(processed.exists())
             self.assertFalse(tech_changes.exists())
-            self.assertFalse(reform_changes.exists())
+            self.assertFalse(westernisation_changes.exists())
 
     def test_new_date_is_recorded(self):
         with tempfile.TemporaryDirectory() as d:
@@ -850,7 +850,7 @@ class TestProcessSave(unittest.TestCase):
             output = root / "goods.csv"
             processed = root / "processed.json"
             tech_changes = root / "technology_changes.csv"
-            reform_changes = root / "westernisation_changes.csv"
+            westernisation_changes = root / "westernisation_changes.csv"
             processed_dates = set()
 
             out = io.StringIO()
@@ -863,7 +863,7 @@ class TestProcessSave(unittest.TestCase):
             self.assertIn(
                 "Recorded 1836-01-02: 5 goods, "
                 "1 technologies (1 new), "
-                "2 unciv reforms (2 changed)",
+                "2 westernisation (2 changed)",
                 out.getvalue(),
             )
             self.assertEqual(len(read_csv(output)), len(MINIMAL_GOODS) + 1)
@@ -875,11 +875,11 @@ class TestProcessSave(unittest.TestCase):
                     ["1836-01-02", "flintlock_rifles", "0", "1"],
                 ],
             )
-            # First reform-tracked date writes the full snapshot.
+            # First westernisation-tracked date writes the full snapshot.
             self.assertEqual(
-                read_csv(reform_changes),
+                read_csv(westernisation_changes),
                 [
-                    ["date", "reform", "old_value", "new_value"],
+                    ["date", "westernisation", "old_value", "new_value"],
                     ["1836-01-02", "army_schools", "", "no_army_schools"],
                     ["1836-01-02", "land_reform", "", "no_land_reform"],
                 ],
@@ -898,7 +898,7 @@ class TestProcessSave(unittest.TestCase):
             output = root / "goods.csv"
             processed = root / "processed.json"
             tech_changes = root / "technology_changes.csv"
-            reform_changes = root / "westernisation_changes.csv"
+            westernisation_changes = root / "westernisation_changes.csv"
             processed_dates = set()
 
             with redirect_stdout(io.StringIO()):
@@ -906,7 +906,7 @@ class TestProcessSave(unittest.TestCase):
 
             rows_before = read_csv(output)
             tech_rows_before = read_csv(tech_changes)
-            reform_rows_before = read_csv(reform_changes)
+            westernisation_rows_before = read_csv(westernisation_changes)
 
             with redirect_stdout(io.StringIO()):
                 result = main.process_save(
@@ -916,7 +916,7 @@ class TestProcessSave(unittest.TestCase):
             self.assertFalse(result)
             self.assertEqual(read_csv(output), rows_before)
             self.assertEqual(read_csv(tech_changes), tech_rows_before)
-            self.assertEqual(read_csv(reform_changes), reform_rows_before)
+            self.assertEqual(read_csv(westernisation_changes), westernisation_rows_before)
 
 
 class TestProcessExistingSaves(unittest.TestCase):
@@ -953,7 +953,7 @@ class TestProcessExistingSaves(unittest.TestCase):
             self.assertEqual(
                 read_csv(out / "westernisation_changes.csv"),
                 [
-                    ["date", "reform", "old_value", "new_value"],
+                    ["date", "westernisation", "old_value", "new_value"],
                     ["1836-01-02", "army_schools", "", "no_army_schools"],
                     ["1836-01-02", "land_reform", "", "no_land_reform"],
                 ],

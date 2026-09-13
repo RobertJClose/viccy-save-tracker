@@ -1,14 +1,14 @@
-"""Uncivilised-reform (westernisation) tracking.
+"""Westernisation tracking.
 
-Reforms are discrete like technologies: each of the military/economic
-reforms available to an uncivilised nation sits at some level (e.g.
-``land_reform=no_land_reform``) and rarely changes. Instead of
-snapshotting all levels every date, ``westernisation_changes.csv``
-records the full set once (the first date ever tracked) and only
-differences afterwards. Replaying the file in date order reconstructs
-the levels at any time.
+Westernisation is discrete like technology: each of the
+military/economic reforms available to an uncivilised nation sits at
+some level (e.g. ``land_reform=no_land_reform``) and rarely changes.
+Instead of snapshotting all levels every date,
+``westernisation_changes.csv`` records the full set once (the first
+date ever tracked) and only differences afterwards. Replaying the file
+in date order reconstructs the levels at any time.
 
-Only the keys in ``UNCIV_REFORM_KEYS`` are tracked, read from the
+Only the keys in ``WESTERNISATION_KEYS`` are tracked, read from the
 player country's block. Keys absent from the block (e.g. every key for
 a civilised nation) are simply not recorded.
 
@@ -23,7 +23,7 @@ import re
 import sys
 from pathlib import Path
 
-UNCIV_REFORM_KEYS = (
+WESTERNISATION_KEYS = (
     "land_reform",
     "admin_reform",
     "finance_reform",
@@ -42,13 +42,13 @@ UNCIV_REFORM_KEYS = (
 )
 
 CHANGES_FILENAME = "westernisation_changes.csv"
-HEADER = ["date", "reform", "old_value", "new_value"]
+HEADER = ["date", "westernisation", "old_value", "new_value"]
 ABSENT = ""
 
 
-def extract_unciv_reforms(country_block: str) -> dict[str, str]:
+def extract_westernisation(country_block: str) -> dict[str, str]:
     """
-    Return the uncivilised-reform levels present in a country block.
+    Return the westernisation levels present in a country block.
 
     Each key is matched on its own line (``key=value`` with unquoted
     values such as ``no_land_reform``); the ``=`` anchor keeps
@@ -57,27 +57,27 @@ def extract_unciv_reforms(country_block: str) -> dict[str, str]:
     recorded raw — progression ladders are discovered from the save,
     never hardcoded.
     """
-    reforms: dict[str, str] = {}
+    westernisation: dict[str, str] = {}
 
-    for key in UNCIV_REFORM_KEYS:
+    for key in WESTERNISATION_KEYS:
         match = re.search(
             r"(?m)^[ \t]*" + re.escape(key) + r"[ \t]*=[ \t]*(\w+)",
             country_block,
         )
 
         if match:
-            reforms[key] = match.group(1)
+            westernisation[key] = match.group(1)
 
-    return reforms
+    return westernisation
 
 
-def load_unciv_reform_state(changes_file: Path) -> dict[str, str]:
+def load_westernisation_state(changes_file: Path) -> dict[str, str]:
     """
-    Rebuild the last-known reform levels by replaying the changes file.
+    Rebuild the last-known westernisation levels by replaying the changes file.
 
-    A missing file means no date has been reform-tracked yet (empty
-    state). A corrupt file warns on stderr and yields an empty state,
-    mirroring load_processed_dates.
+    A missing file means no date has been westernisation-tracked yet
+    (empty state). A corrupt file warns on stderr and yields an empty
+    state, mirroring load_processed_dates.
     """
     if not changes_file.exists():
         return {}
@@ -107,7 +107,7 @@ def load_unciv_reform_state(changes_file: Path) -> dict[str, str]:
     except (OSError, ValueError, csv.Error):
         print(
             f"Warning: {changes_file} is invalid. "
-            "Starting with an empty uncivilised-reform state.",
+            "Starting with an empty westernisation state.",
             file=sys.stderr,
         )
         return {}
@@ -120,17 +120,17 @@ def append_westernisation_changes(
     current: dict[str, str],
 ) -> dict[str, tuple[str, str]]:
     """
-    Record uncivilised-reform changes for one in-game date.
+    Record westernisation changes for one in-game date.
 
     The first date ever tracked (no changes file yet) writes the full
-    snapshot: one ``"" -> level`` row per present reform, or just the
-    header when none is present (e.g. a civilised player). Later dates
-    append one row per changed reform — new level, newly appeared key
-    (``"" -> level``) or disappeared key (``level -> ""``) — sorted by
-    reform name; dates with no changes append nothing.
+    snapshot: one ``"" -> level`` row per present westernisation, or just
+    the header when none is present (e.g. a civilised player). Later dates
+    append one row per changed westernisation — new level, newly appeared
+    key (``"" -> level``) or disappeared key (``level -> ""``) — sorted by
+    westernisation name; dates with no changes append nothing.
 
     Returns:
-        {reform: (old_value, new_value)} for every changed reform.
+        {westernisation: (old_value, new_value)} for every change.
     """
     changed: dict[str, tuple[str, str]] = {}
 

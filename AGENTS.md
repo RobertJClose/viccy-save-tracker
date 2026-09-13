@@ -16,8 +16,8 @@ where `name={1 0.000}` means unlocked). Techs are discrete, so
 afterwards — replaying it in date order reconstructs the state at any
 time.
 
-It likewise records the player's **uncivilised reforms** (the
-westernisation set: `land_reform`, `army_schools`, ... as flat
+It likewise records the player's **westernisation** (the military /
+economic reform set: `land_reform`, `army_schools`, ... as flat
 `key=level` lines in the same country block; absent keys, e.g. every
 key for a civilised nation, are simply skipped). Levels are recorded
 raw in `westernisation_changes.csv` with the same snapshot-then-deltas
@@ -38,8 +38,8 @@ save games\                <- Victoria II's save directory (parent of the repo)
     goods.py                 <- goods-price extraction + CSV output
     technologies.py          <- player tech extraction + changes CSV
                                (snapshot first, deltas after)
-    unciv_reforms.py         <- player unciv-reform extraction + westernisation
-                               changes CSV (snapshot first, deltas after)
+    westernisation.py        <- player westernisation extraction + changes CSV
+                               (snapshot first, deltas after)
     inventions.py            <- STUB: player invention extraction (NotImplementedError)
     initialise.py            <- one-shot setup dispatcher (run manually)
     init_inventions_map.py   <- one-shot: invention ID -> name mapping builder
@@ -48,7 +48,7 @@ save games\                <- Victoria II's save directory (parent of the repo)
   history\<output-dir>      <- user-chosen per-world output (see below)
     goods_prices.csv       <- output CSV (created at runtime)
     technology_changes.csv <- tech change log (created at runtime)
-    westernisation_changes.csv <- unciv-reform change log (created at runtime)
+    westernisation_changes.csv <- westernisation change log (created at runtime)
     processed_dates.json   <- dedup ledger (created at runtime)
 ```
 
@@ -159,7 +159,7 @@ Reforms (`westernisation_changes.csv`): one row per level change, with
 levels recorded raw and disappearance as an empty new value:
 
 ```
-date,reform,old_value,new_value
+date,westernisation,old_value,new_value
 1836-01-02,land_reform,,no_land_reform
 ```
 
@@ -186,19 +186,19 @@ If the file is missing or corrupt, the script starts with an empty set
   `extract_technologies` in `technologies.py` (isolates the player
   country's `technology` block via `common.extract_country_block`,
   returns `{tech, ...}`; `name={1 0.000}` means unlocked, the value is
-  ignored), `extract_unciv_reforms` in `unciv_reforms.py` (flat
-  `key=level` lines for the fixed `UNCIV_REFORM_KEYS` set, returns
-  `{reform: level}` of keys present; levels recorded raw, absent keys
+  ignored), `extract_westernisation` in `westernisation.py` (flat
+  `key=level` lines for the fixed `WESTERNISATION_KEYS` set, returns
+  `{westernisation: level}` of keys present; levels recorded raw, absent keys
   skipped), and later `extract_invention_ids` in its module. Good names are discovered
   dynamically from the save rather than hardcoded, so late-game goods
   and modded goods are tracked without code changes. Do not reintroduce
   per-good helpers.
 - **One processed-dates ledger:** `processed_dates.json` is the single
   source of truth for what has been tracked. Every module (goods,
-  technologies and unciv reforms today; inventions in future) keys off
+  technologies and westernisation today; inventions in future) keys off
   the same in-game-date set — do not add per-module cursors. Discrete
   state is derived by replaying the changes CSVs
-  (`load_technology_state`, `load_unciv_reform_state`), not from
+  (`load_technology_state`, `load_westernisation_state`), not from
   separate state files.
 - **Country blocks need brace matching:** nested `{...}` blocks cannot
   be isolated with a single regex — use

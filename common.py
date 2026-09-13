@@ -164,8 +164,8 @@ def load_processed_dates(processed_file: Path) -> set[str]:
     Load dates that have already been exported.
 
     This is the single source of truth for what has been tracked: every
-    module (goods today; technologies, inventions and reforms in future)
-    keys off the same in-game-date set.
+    module (goods, technologies and westernisation today; inventions in
+    future) keys off the same in-game-date set.
     """
     if not processed_file.exists():
         return set()

@@ -27,11 +27,11 @@ from technologies import (
     extract_technologies,
     load_technology_state,
 )
-from unciv_reforms import (
+from westernisation import (
     CHANGES_FILENAME as WESTERNISATION_CHANGES_FILENAME,
     append_westernisation_changes,
-    extract_unciv_reforms,
-    load_unciv_reform_state,
+    extract_westernisation,
+    load_westernisation_state,
 )
 
 
@@ -44,11 +44,12 @@ def parse_save(path: Path) -> tuple[str, dict[str, float], set[str], dict[str, s
     Parse a Victoria II save and return:
 
         (game_date, {good: price, ...}, {unlocked technology, ...},
-         {uncivilised reform: level, ...})
+         {westernisation: level, ...})
 
-    Technologies and reforms belong to the player country (see the
-    ``player=`` header); ``name={1 0.000}`` means unlocked, and reform
-    levels (e.g. ``land_reform=no_land_reform``) are recorded raw.
+    Technologies and westernisation belong to the player country (see the
+    ``player=`` header); ``name={1 0.000}`` means unlocked, and
+    westernisation levels (e.g. ``land_reform=no_land_reform``) are
+    recorded raw.
     """
     text = read_save(path)
 
@@ -57,9 +58,9 @@ def parse_save(path: Path) -> tuple[str, dict[str, float], set[str], dict[str, s
     player_tag = extract_player_tag(text)
     country_block = extract_country_block(text, player_tag)
     technologies = extract_technologies(country_block)
-    reforms = extract_unciv_reforms(country_block)
+    westernisation = extract_westernisation(country_block)
 
-    return game_date, goods, technologies, reforms
+    return game_date, goods, technologies, westernisation
 
 
 def process_save(
@@ -78,7 +79,7 @@ def process_save(
         return False
 
     try:
-        game_date, goods, techs, reforms = parse_save(path)
+        game_date, goods, techs, westernisation = parse_save(path)
 
     except (OSError, ValueError) as exc:
         print(f"Could not process {path.name}: {exc}")
@@ -99,10 +100,10 @@ def process_save(
         tech_file, game_date, previous_techs, techs
     )
 
-    reform_file = processed_file.parent / WESTERNISATION_CHANGES_FILENAME
-    previous_reforms = load_unciv_reform_state(reform_file)
-    changed_reforms = append_westernisation_changes(
-        reform_file, game_date, previous_reforms, reforms
+    westernisation_file = processed_file.parent / WESTERNISATION_CHANGES_FILENAME
+    previous_westernisation = load_westernisation_state(westernisation_file)
+    changed_westernisation = append_westernisation_changes(
+        westernisation_file, game_date, previous_westernisation, westernisation
     )
 
     processed_dates.add(game_date)
@@ -112,7 +113,7 @@ def process_save(
         f"Recorded {game_date}: "
         f"{len(goods)} goods, "
         f"{len(techs)} technologies ({len(acquired)} new), "
-        f"{len(reforms)} unciv reforms ({len(changed_reforms)} changed)"
+        f"{len(westernisation)} westernisation ({len(changed_westernisation)} changed)"
     )
 
     return True
@@ -213,7 +214,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
             "Track Victoria II good prices, player technology "
-            "and uncivilised reforms."
+            "and westernisation."
         ),
     )
 
