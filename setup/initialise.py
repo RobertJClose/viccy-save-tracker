@@ -4,8 +4,8 @@ Today this only builds the invention ID -> name mapping; future
 initialisation work registers in TASKS below.
 
 Usage:
-    python initialise.py [--game-dir ...] [--output ...] [--check-save ...]
-    python initialise.py --list
+    python -m setup.initialise [--game-dir ...] [--output ...] [--check-save ...]
+    python -m setup.initialise --list
 """
 
 from __future__ import annotations
@@ -13,12 +13,12 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-import init_inventions_map
+from setup.build_inventions_map import main as build_inventions_map_main
 
 TASKS = {
     "inventions-map": (
         "Build inventions_map.json (ID -> name) from the game install.",
-        init_inventions_map.main,
+        build_inventions_map_main,
     ),
 }
 
@@ -38,7 +38,7 @@ def main(argv: list[str] | None = None) -> None:
         "--game-dir",
         type=Path,
         default=None,
-        help="Forwarded to tasks (overrides GAME_DIR in common.py).",
+        help="Forwarded to tasks (overrides GAME_DIR in core/config.py).",
     )
 
     parser.add_argument(

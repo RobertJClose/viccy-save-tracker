@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-EXAMPLE_SAVE = REPO_ROOT / "example.v2"
+EXAMPLE_SAVE = REPO_ROOT / "example_saves" / "example.v2"
 
 
 # A small realistic save: header date, several price pools (only price_pool

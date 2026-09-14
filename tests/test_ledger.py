@@ -1,5 +1,5 @@
 """
-Tests for the processed-dates ledger and output paths (common.py).
+Tests for the processed-dates ledger and output paths (core/ledger.py).
 
 Run from the repository root:
 
@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import common
+from core import ledger
 
 
 class TestProcessedDates(unittest.TestCase):
@@ -26,7 +26,7 @@ class TestProcessedDates(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             err = io.StringIO()
             with redirect_stderr(err):
-                result = common.load_processed_dates(Path(d) / "nope.json")
+                result = ledger.load_processed_dates(Path(d) / "nope.json")
             self.assertEqual(result, set())
             self.assertEqual(err.getvalue(), "")
 
@@ -35,7 +35,7 @@ class TestProcessedDates(unittest.TestCase):
             p = Path(d) / "processed.json"
             p.write_text('["1836-01-02", "1836-02-01"]', encoding="utf-8")
             self.assertEqual(
-                common.load_processed_dates(p),
+                ledger.load_processed_dates(p),
                 {"1836-01-02", "1836-02-01"},
             )
 
@@ -45,7 +45,7 @@ class TestProcessedDates(unittest.TestCase):
             p.write_text("{{not json", encoding="utf-8")
             err = io.StringIO()
             with redirect_stderr(err):
-                result = common.load_processed_dates(p)
+                result = ledger.load_processed_dates(p)
             self.assertEqual(result, set())
             self.assertIn("Warning", err.getvalue())
 
@@ -55,14 +55,14 @@ class TestProcessedDates(unittest.TestCase):
             p.write_text('{"a": 1}', encoding="utf-8")
             err = io.StringIO()
             with redirect_stderr(err):
-                result = common.load_processed_dates(p)
+                result = ledger.load_processed_dates(p)
             self.assertEqual(result, set())
             self.assertIn("Warning", err.getvalue())
 
     def test_save_writes_sorted_json_list(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "processed.json"
-            common.save_processed_dates(
+            ledger.save_processed_dates(
                 p, {"1836-02-01", "1836-01-02", "1836-03-02"}
             )
             data = json.loads(p.read_text(encoding="utf-8"))
@@ -72,8 +72,8 @@ class TestProcessedDates(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "processed.json"
             dates = {"1836-01-02", "1836-02-01", "1836-04-03"}
-            common.save_processed_dates(p, dates)
-            self.assertEqual(common.load_processed_dates(p), dates)
+            ledger.save_processed_dates(p, dates)
+            self.assertEqual(ledger.load_processed_dates(p), dates)
 
 
 class TestOutputPaths(unittest.TestCase):
@@ -81,7 +81,7 @@ class TestOutputPaths(unittest.TestCase):
     def test_returns_csv_and_processed_paths(self):
         out = Path("some/output")
         self.assertEqual(
-            common.output_paths(out),
+            ledger.output_paths(out),
             (out / "goods_prices.csv", out / "processed_dates.json"),
         )
 

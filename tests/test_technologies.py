@@ -16,8 +16,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import common
-import technologies
+from core import parsing
+from domains import technologies
 from helpers import EXAMPLE_SAVE, read_csv
 
 
@@ -64,7 +64,7 @@ class TestExtractTechnologies(unittest.TestCase):
 
     def test_real_example_save_eng_block(self):
         text = EXAMPLE_SAVE.read_text(encoding="utf-8", errors="replace")
-        block = common.extract_country_block(text, "ENG")
+        block = parsing.extract_country_block(text, "ENG")
         techs = technologies.extract_technologies(block)
         self.assertEqual(len(techs), 35)
         self.assertIn("flintlock_rifles", techs)

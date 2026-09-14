@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import goods
+from domains import goods
 from helpers import MINIMAL_GOODS, MINIMAL_SAVE, read_csv
 
 

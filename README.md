@@ -35,11 +35,11 @@ import into LibreOffice Calc.
    installs):
 
    ```bash
-   # Edit GAME_DIR in common.py first, or pass --game-dir explicitly.
-   python initialise.py --check-save example.v2
-   ```
+    # Edit GAME_DIR in core/config.py first, or pass --game-dir explicitly.
+    python -m setup.initialise --check-save example_saves/example.v2
+    ```
 
-   `python initialise.py --list` shows the available setup tasks.
+    `python -m setup.initialise --list` shows the available setup tasks.
 
 ## Usage
 
@@ -56,11 +56,11 @@ Record the autosave file(s) you name and exit. You are responsible for
 picking the files that belong to the save game being tracked:
 
 ```bash
-python main.py --once --files autosave.v2 history\france
+python main.py --once --files autosave.v2 saves\france
 
 # Backfill from the previous two autosaves (only correct if all three
 # files are from the save game being tracked).
-python main.py --once --files autosave.v2,oldautosave.v2,olderautosave.v2 history\france
+python main.py --once --files autosave.v2,oldautosave.v2,olderautosave.v2 saves\france
 ```
 
 ### Watch mode
@@ -70,7 +70,7 @@ as soon as it is detected (after a short delay to let the game finish
 writing). Press **Ctrl+C** to stop.
 
 ```bash
-python main.py --watch history\france
+python main.py --watch saves\france
 ```
 
 Only `autosave.v2` is watched. The rotated files (`oldautosave.v2`,
@@ -163,15 +163,23 @@ save games\
   olderautosave.v2
   tracker\
     main.py
-    common.py
-    goods.py
-    technologies.py
-    westernisation.py
-    inventions.py
-    initialise.py
-    init_inventions_map.py
-    inventions_map.json
-    history\france\
+    core\
+      config.py
+      parsing.py
+      ledger.py
+    domains\
+      goods.py
+      technologies.py
+      westernisation.py
+      inventions.py
+    setup\
+      initialise.py
+      build_inventions_map.py
+    data\
+      inventions_map.json
+    example_saves\
+      example.v2
+    saves\france\
       goods_prices.csv
       technology_changes.csv
       westernisation_changes.csv

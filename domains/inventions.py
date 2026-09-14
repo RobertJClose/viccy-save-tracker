@@ -5,7 +5,7 @@ from the player country's ``active_inventions={ ... }`` block.
 
 Save files record inventions as numeric IDs only; human-readable names
 come from the ID -> name mapping file produced by
-``build_inventions_map.py`` (latest vanilla game).
+``setup/build_inventions_map.py`` (latest vanilla game).
 """
 
 from __future__ import annotations

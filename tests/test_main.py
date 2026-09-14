@@ -19,7 +19,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import common
+from core import config
 import main
 from helpers import (
     EXAMPLE_SAVE,
@@ -340,17 +340,17 @@ class TestWatch(unittest.TestCase):
 class TestConstants(unittest.TestCase):
 
     def test_watch_mode_tracks_only_the_live_autosave(self):
-        self.assertEqual(common.WATCH_FILES, ["autosave.v2"])
+        self.assertEqual(config.WATCH_FILES, ["autosave.v2"])
 
     def test_save_files_are_the_three_rotated_names(self):
         self.assertEqual(
-            common.SAVE_FILES,
+            config.SAVE_FILES,
             ["autosave.v2", "oldautosave.v2", "olderautosave.v2"],
         )
 
     def test_output_filenames(self):
-        self.assertEqual(common.OUTPUT_FILENAME, "goods_prices.csv")
-        self.assertEqual(common.PROCESSED_FILENAME, "processed_dates.json")
+        self.assertEqual(config.OUTPUT_FILENAME, "goods_prices.csv")
+        self.assertEqual(config.PROCESSED_FILENAME, "processed_dates.json")
 
 
 class TestMain(unittest.TestCase):

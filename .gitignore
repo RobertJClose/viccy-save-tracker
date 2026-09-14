@@ -4,7 +4,7 @@ __pycache__/
 *.csv
 *.json
 # ...except the committed vanilla invention map (generated once via
-# initialise.py; runtime ledgers like processed_dates.json stay ignored).
-!inventions_map.json
+# setup.initialise; runtime ledgers like processed_dates.json stay ignored).
+!data/inventions_map.json
 *.ods
 .~lock.*

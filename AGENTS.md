@@ -3,7 +3,7 @@
 ## Purpose
 
 A Python script that watches Victoria II autosaves as they roll in and
-appends rows to a `.csv` file. The CSV is designed for import into
+appends rows to `.csv` files. The CSVs are designed for import into
 LibreOffice Calc for visualisation and analysis.
 
 The tracker records **every** good's price found in
@@ -32,43 +32,50 @@ save games\                <- Victoria II's save directory (parent of the repo)
   olderautosave.v2         <- two autosaves ago
   tracker\                 <- THIS REPO (the script lives here)
     main.py                  <- entrypoint (CLI, watch loop, orchestration)
-    common.py                <- shared infra (paths, dates, processed-dates ledger,
-                               player tag + country-block isolation; GAME_DIR
-                               setting for the game install)
-    goods.py                 <- goods-price extraction + CSV output
-    technologies.py          <- player tech extraction + changes CSV
+    core\                    <- shared infra: config (paths, SAVE_FILES,
+                                GAME_DIR setting), parsing (dates, player
+                                tag, country-block isolation), ledger
+                                (processed-dates, output paths)
+    domains\                 <- one module per tracked thing:
+      goods.py                 goods-price extraction + CSV output
+      technologies.py          player tech extraction + changes CSV
                                (snapshot first, deltas after)
-    westernisation.py        <- player westernisation extraction + changes CSV
+      westernisation.py        player westernisation extraction + changes CSV
                                (snapshot first, deltas after)
-    inventions.py            <- STUB: player invention extraction (NotImplementedError)
-    initialise.py            <- one-shot setup dispatcher (run manually)
-    init_inventions_map.py   <- one-shot: invention ID -> name mapping builder
-    inventions_map.json      <- committed vanilla mapping (generated, index == ID)
-    example.v2             <- example save for agents to inspect
-  history\<output-dir>      <- user-chosen per-world output (see below)
+      inventions.py            STUB: player invention extraction
+                               (NotImplementedError)
+    setup\                   <- one-shot setup (run manually, not tracking):
+      initialise.py            setup dispatcher (`python -m setup.initialise`)
+      build_inventions_map.py  invention ID -> name mapping builder
+    data\
+      inventions_map.json      committed vanilla mapping (generated, index == ID)
+    example_saves\
+      example.v2             <- example save for agents to inspect
+    tests\                   <- per-module tests + helpers.py (shared fixtures)
+  saves\<output-dir>        <- user-chosen per-world output (see below)
     goods_prices.csv       <- output CSV (created at runtime)
     technology_changes.csv <- tech change log (created at runtime)
     westernisation_changes.csv <- westernisation change log (created at runtime)
     processed_dates.json   <- dedup ledger (created at runtime)
 ```
 
-The script lives **inside** the save directory, so it can locate the
-`.v2` files at `Path(__file__).resolve().parent.parent`.
+The script lives **inside** the save directory, so `core/config.py`
+can locate the `.v2` files at `Path(__file__).resolve().parent.parent`.
 
 ## How to run
 
 ```bash
 # One-shot: record the file(s) you name and exit. It is your
 # responsibility to pick the files that belong to this save game.
-python main.py --once --files autosave.v2 history\france
+python main.py --once --files autosave.v2 saves\france
 
 # The same, but also backfill from the previous two autosaves (only
 # correct if all three files are from the save game being tracked).
-python main.py --once --files autosave.v2,oldautosave.v2,olderautosave.v2 history\france
+python main.py --once --files autosave.v2,oldautosave.v2,olderautosave.v2 saves\france
 
 # Watch: poll the live autosave; new autosaves are processed as they
 # appear. Ctrl+C to stop.
-python main.py --watch history\france
+python main.py --watch saves\france
 ```
 
 The output directory is **mandatory** and must already exist. It is the
@@ -84,7 +91,7 @@ If neither flag is given, `--once` is the default (and still requires
 ## Running tests
 
 Before and after any change to the Python sources (`main.py`,
-`common.py`, `goods.py`, ...), run the unit test suite from
+`core/`, `domains/`, `setup/`, ...), run the unit test suite from
 the repository root:
 
 ```bash
@@ -93,7 +100,7 @@ python -m unittest discover -s tests -v
 
 The tests document the script's current behaviour end-to-end, including
 the parsing helpers, the dedup ledger, the CSV output format, CLI
-validation, and watch mode. The real fixture `example.v2` is parsed as an
+validation, and watch mode. The real fixture `example_saves/example.v2` is parsed as an
 integration test, so good-discovery (including late-game goods like
 `automobiles` and `radio`) is verified.
 
@@ -127,7 +134,7 @@ worldmarket=
 
 Each line inside the block is `good_name=decimal_price`.
 
-See `example.v2` for a full sample (start-of-game date, so no late-game
+See `example_saves/example.v2` for a full sample (start-of-game date, so no late-game
 goods or events).
 
 ## CSV schemas
@@ -182,11 +189,11 @@ If the file is missing or corrupt, the script starts with an empty set
 
 - **Single extraction helper per domain:** each extractable thing owns
   exactly one parsing function in its module — `extract_goods` in
-  `goods.py` (isolates the `price_pool` block, returns `{good: price}`),
-  `extract_technologies` in `technologies.py` (isolates the player
-  country's `technology` block via `common.extract_country_block`,
+  `domains/goods.py` (isolates the `price_pool` block, returns `{good: price}`),
+  `extract_technologies` in `domains/technologies.py` (isolates the player
+  country's `technology` block via `core.parsing.extract_country_block`,
   returns `{tech, ...}`; `name={1 0.000}` means unlocked, the value is
-  ignored), `extract_westernisation` in `westernisation.py` (flat
+  ignored), `extract_westernisation` in `domains/westernisation.py` (flat
   `key=level` lines for the fixed `WESTERNISATION_KEYS` set, returns
   `{westernisation: level}` of keys present; levels recorded raw, absent keys
   skipped), and later `extract_invention_ids` in its module. Good names are discovered
@@ -202,21 +209,21 @@ If the file is missing or corrupt, the script starts with an empty set
   separate state files.
 - **Country blocks need brace matching:** nested `{...}` blocks cannot
   be isolated with a single regex — use
-  `common.extract_braced_content`, which counts braces while skipping
+  `core.parsing.extract_braced_content`, which counts braces while skipping
   quoted strings. Tags are anchored at column 0 so values like
   `country="JAP"` never match.
 - **Invention IDs are 1-based declaration order:** save-file invention
   IDs index the game install's `inventions/*.txt` files read in sorted
   filename order, top-level `name = {` blocks in file order. The parser
-  (`init_inventions_map.py`) strips `#` comments first (commented-out
+  (`setup/build_inventions_map.py`) strips `#` comments first (commented-out
   inventions take no ID) and skips nested blocks, so nested
   `invention = <name>` cross-references are never collected. Names may
   contain `:`, `.` and leading digits (`genetics:_heredity`,
-  `15_inch_main_armament`). `inventions_map.json` is generated once via
-  `python initialise.py --check-save example.v2` (validates count ==
+  `15_inch_main_armament`). `data/inventions_map.json` is generated once via
+  `python -m setup.initialise --check-save example_saves/example.v2` (validates count ==
   max save ID plus anchor IDs) and committed as the vanilla default; a
   modded install re-runs with `--game-dir`/`--output`. `GAME_DIR` in
-  `common.py` is the user-edited install root.
+  `core/config.py` is the user-edited install root.
 - **Stdlib only:** The script uses no third-party packages.
 - **Encoding:** Save files are read as UTF-8 with `errors='replace'`
   (one bad byte must not abort the whole file).

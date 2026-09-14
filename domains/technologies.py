@@ -18,7 +18,7 @@ import re
 import sys
 from pathlib import Path
 
-from common import extract_braced_content
+from core.parsing import extract_braced_content
 
 CHANGES_FILENAME = "technology_changes.csv"
 HEADER = ["date", "technology", "old_value", "new_value"]

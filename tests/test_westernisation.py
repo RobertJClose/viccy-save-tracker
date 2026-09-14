@@ -16,8 +16,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import common
-import westernisation
+from core import parsing
+from domains import westernisation
 from helpers import EXAMPLE_SAVE, read_csv
 
 
@@ -55,7 +55,7 @@ class TestExtractWesternisation(unittest.TestCase):
 
     def test_real_example_save_jap_block(self):
         text = EXAMPLE_SAVE.read_text(encoding="utf-8", errors="replace")
-        block = common.extract_country_block(text, "JAP")
+        block = parsing.extract_country_block(text, "JAP")
         levels = westernisation.extract_westernisation(block)
         self.assertEqual(len(levels), 15)
         self.assertTrue(
@@ -65,7 +65,7 @@ class TestExtractWesternisation(unittest.TestCase):
 
     def test_real_example_save_eng_block_is_empty(self):
         text = EXAMPLE_SAVE.read_text(encoding="utf-8", errors="replace")
-        block = common.extract_country_block(text, "ENG")
+        block = parsing.extract_country_block(text, "ENG")
         self.assertEqual(westernisation.extract_westernisation(block), {})
 
 

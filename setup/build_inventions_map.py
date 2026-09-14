@@ -6,7 +6,7 @@ installation's ``inventions/*.txt`` files. IDs are 1-based positions in
 declaration order across those files in sorted filename order (army,
 commerce, culture, industry, navy in vanilla).
 
-Run once via ``initialise.py``; the resulting ``inventions_map.json``
+Run once via ``python -m setup.initialise``; the resulting ``inventions_map.json``
 is committed as the vanilla default. A modded install just means
 re-running with a different ``--game-dir``/``--output``.
 """
@@ -18,7 +18,7 @@ import json
 import re
 from pathlib import Path
 
-from common import GAME_DIR, INVENTIONS_MAP_FILE
+from core.config import GAME_DIR, INVENTIONS_MAP_FILE
 
 INVENTIONS_SUBDIR = "inventions"
 
@@ -92,7 +92,7 @@ def build_invention_list(game_dir: Path) -> tuple[list[str], list[str]]:
         raise FileNotFoundError(
             f"No inventions directory at {inventions_dir}. "
             "Pass --game-dir pointing at your Victoria II installation "
-            "or set GAME_DIR in common.py."
+            "or set GAME_DIR in core/config.py."
         )
 
     files = sorted(
@@ -193,7 +193,7 @@ def main(argv: list[str] | None = None) -> Path:
         "--game-dir",
         type=Path,
         default=GAME_DIR,
-        help="Victoria II installation directory (default: GAME_DIR in common.py).",
+        help="Victoria II installation directory (default: GAME_DIR in core/config.py).",
     )
 
     parser.add_argument(
@@ -219,7 +219,7 @@ def main(argv: list[str] | None = None) -> Path:
     args = parser.parse_args(argv)
 
     if args.game_dir is None:
-        parser.error("--game-dir is required (GAME_DIR in common.py is unset).")
+        parser.error("--game-dir is required (GAME_DIR in core/config.py is unset).")
 
     names, files = build_invention_list(args.game_dir)
     print(f"Found {len(names)} inventions in {len(files)} files: {', '.join(files)}")

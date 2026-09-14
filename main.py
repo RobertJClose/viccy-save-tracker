@@ -5,29 +5,33 @@ import sys
 import time
 from pathlib import Path
 
-from common import (
+from core.config import (
     OUTPUT_FILENAME,
     PROCESSED_FILENAME,
     REPO_DIR,
     SAVE_DIR,
     SAVE_FILES,
     WATCH_FILES,
+)
+from core.ledger import (
+    load_processed_dates,
+    output_paths,
+    save_processed_dates,
+)
+from core.parsing import (
     extract_country_block,
     extract_game_date,
     extract_player_tag,
-    load_processed_dates,
-    output_paths,
     read_save,
-    save_processed_dates,
 )
-from goods import append_observations, extract_goods
-from technologies import (
+from domains.goods import append_observations, extract_goods
+from domains.technologies import (
     CHANGES_FILENAME as TECHNOLOGY_CHANGES_FILENAME,
     append_technology_changes,
     extract_technologies,
     load_technology_state,
 )
-from westernisation import (
+from domains.westernisation import (
     CHANGES_FILENAME as WESTERNISATION_CHANGES_FILENAME,
     append_westernisation_changes,
     extract_westernisation,
