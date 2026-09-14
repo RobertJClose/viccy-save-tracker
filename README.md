@@ -9,8 +9,10 @@ import into LibreOffice Calc.
 
 - Python 3.9+ (uses `pathlib`, builtin generics, and f-strings).
 - No third-party packages (stdlib only).
-- A working Victoria II installation whose save directory is
-  `<game>\save games\`.
+- A working Victoria II installation. Note the save directory is **not**
+  under the game install: saves live in your Documents folder at
+  `Documents\Paradox Interactive\Victoria II\save games\`
+  (e.g. `C:\Users\<you>\Documents\Paradox Interactive\Victoria II\save games\`).
 
 ## Setup
 
@@ -18,17 +20,17 @@ import into LibreOffice Calc.
    directory:
 
    ```
-   <game>\save games\tracker\
+   Documents\Paradox Interactive\Victoria II\save games\tracker\
    ```
 
 2. (Optional) create a virtual environment — the script is stdlib-only,
    but a venv keeps your system Python clean:
 
-   ```bash
-   cd "<game>\save games\tracker"
-   python -m venv .venv
-   .venv\Scripts\activate
-   ```
+    ```bash
+    cd "Documents\Paradox Interactive\Victoria II\save games\tracker"
+    python -m venv .venv
+    .venv\Scripts\activate
+    ```
 
 3. (One-off) build the invention ID → name mapping from your game
    install (already committed for vanilla; re-run only for modded

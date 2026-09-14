@@ -9,12 +9,16 @@ from pathlib import Path
 
 # This package lives in:
 #
-#   ...\Victoria II\save games\your-repo\core\config.py
+#   ...\Documents\Paradox Interactive\Victoria II\save games\tracker\core\config.py
 #
 # Therefore:
 #
-#   REPO_DIR = save games\your-repo
-#   SAVE_DIR = save games
+#   REPO_DIR = ...\save games\tracker
+#   SAVE_DIR = ...\save games
+#
+# Note: the save directory is under your Documents folder, not under the
+# game install (GAME_DIR below points at the install, used only to locate
+# game data such as inventions/*.txt).
 #
 # The output directory (the CSV history and processed-dates ledger) is chosen
 # by the user at runtime and must match the save game being tracked.

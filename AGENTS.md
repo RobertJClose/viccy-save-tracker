@@ -26,38 +26,39 @@ shape as technologies.
 ## Directory layout
 
 ```
-save games\                <- Victoria II's save directory (parent of the repo)
-  autosave.v2              <- live autosave (rotated by the game each month)
-  oldautosave.v2           <- previous autosave
-  olderautosave.v2         <- two autosaves ago
-  tracker\                 <- THIS REPO (the script lives here)
-    main.py                  <- entrypoint (CLI, watch loop, orchestration)
-    core\                    <- shared infra: config (paths,
-                                GAME_DIR setting), parsing (dates, player
-                                tag, country-block isolation), ledger
-                                (processed-dates, output paths)
-    domains\                 <- one module per tracked thing:
-      goods.py                 goods-price extraction + CSV output
-      technologies.py          player tech extraction + changes CSV
-                               (snapshot first, deltas after)
-      westernisation.py        player westernisation extraction + changes CSV
-                               (snapshot first, deltas after)
-      inventions.py            STUB: player invention extraction
-                               (NotImplementedError)
-    setup\                   <- one-shot setup (run manually, not tracking):
-      initialise.py            setup dispatcher (`python -m setup.initialise`)
-      build_inventions_map.py  invention ID -> name mapping builder
-    data\
-      inventions_map.json      committed vanilla mapping (generated, index == ID)
-    example_saves\
-      example_japan_1836.v2  <- example save for agents to inspect
-      example_japan_1845.v2
-    tests\                   <- per-module tests + helpers.py (shared fixtures)
-  saves\<output-dir>        <- user-chosen per-world output (see below)
-    goods_prices.csv       <- output CSV (created at runtime)
-    technology_changes.csv <- tech change log (created at runtime)
-    westernisation_changes.csv <- westernisation change log (created at runtime)
-    processed_dates.json   <- dedup ledger (created at runtime)
+Documents\Paradox Interactive\Victoria II\
+  save games\                <- Victoria II's save directory (parent of the repo)
+    autosave.v2              <- live autosave (rotated by the game each month)
+    oldautosave.v2           <- previous autosave
+    olderautosave.v2         <- two autosaves ago
+    tracker\                 <- THIS REPO (the script lives here)
+      main.py                  <- entrypoint (CLI, watch loop, orchestration)
+      core\                    <- shared infra: config (paths,
+                                  GAME_DIR setting), parsing (dates, player
+                                  tag, country-block isolation), ledger
+                                  (processed-dates, output paths)
+      domains\                 <- one module per tracked thing:
+        goods.py                 goods-price extraction + CSV output
+        technologies.py          player tech extraction + changes CSV
+                                 (snapshot first, deltas after)
+        westernisation.py        player westernisation extraction + changes CSV
+                                 (snapshot first, deltas after)
+        inventions.py            STUB: player invention extraction
+                                 (NotImplementedError)
+      setup\                   <- one-shot setup (run manually, not tracking):
+        initialise.py            setup dispatcher (`python -m setup.initialise`)
+        build_inventions_map.py  invention ID -> name mapping builder
+      data\
+        inventions_map.json      committed vanilla mapping (generated, index == ID)
+      example_saves\
+        example_japan_1836.v2  <- example save for agents to inspect
+        example_japan_1845.v2
+      tests\                   <- per-module tests + helpers.py (shared fixtures)
+      saves\<output-dir>        <- user-chosen per-world output (see below)
+        goods_prices.csv       <- output CSV (created at runtime)
+        technology_changes.csv <- tech change log (created at runtime)
+        westernisation_changes.csv <- westernisation change log (created at runtime)
+        processed_dates.json   <- dedup ledger (created at runtime)
 ```
 
 The script lives **inside** the save directory, so `core/config.py`
