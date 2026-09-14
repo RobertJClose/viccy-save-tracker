@@ -214,6 +214,29 @@ class TestProcessExistingSaves(unittest.TestCase):
                 ],
             )
 
+    def test_processes_custom_named_manual_save(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            save_dir = root / "save"
+            save_dir.mkdir()
+            (save_dir / "France_1840.v2").write_text(
+                MINIMAL_SAVE, encoding="utf-8"
+            )
+            out = root / "out"
+            out.mkdir()
+
+            with mock.patch.object(main, "SAVE_DIR", save_dir):
+                with redirect_stdout(io.StringIO()):
+                    main.process_existing_saves(out, ["France_1840.v2"])
+
+            rows = read_csv(out / "goods_prices.csv")
+            self.assertEqual(rows[0], ["date", "good", "price"])
+            self.assertEqual(len(rows), len(MINIMAL_GOODS) + 1)
+            self.assertEqual(
+                json.loads((out / "processed_dates.json").read_text(encoding="utf-8")),
+                ["1836-01-02"],
+            )
+
     def test_missing_file_prints_not_found(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
@@ -342,12 +365,6 @@ class TestConstants(unittest.TestCase):
     def test_watch_mode_tracks_only_the_live_autosave(self):
         self.assertEqual(config.WATCH_FILES, ["autosave.v2"])
 
-    def test_save_files_are_the_three_rotated_names(self):
-        self.assertEqual(
-            config.SAVE_FILES,
-            ["autosave.v2", "oldautosave.v2", "olderautosave.v2"],
-        )
-
     def test_output_filenames(self):
         self.assertEqual(config.OUTPUT_FILENAME, "goods_prices.csv")
         self.assertEqual(config.PROCESSED_FILENAME, "processed_dates.json")
@@ -394,10 +411,33 @@ class TestMain(unittest.TestCase):
         with self.assertRaises(SystemExit):
             self.run_main(argv)
 
-    def test_unknown_save_file_name_errors(self):
-        argv = ["main.py", "--once", "--files", "bogus.v2", str(self.out)]
+    def test_valid_once_with_custom_save_name_calls_process_existing_saves(self):
+        argv = ["main.py", "--once", "--files", "mysave.v2", str(self.out)]
+        with mock.patch("main.process_existing_saves") as mock_process:
+            self.run_main(argv)
+        mock_process.assert_called_once_with(self.out, ["mysave.v2"])
+
+    def test_non_v2_extension_errors(self):
+        argv = ["main.py", "--once", "--files", "notes.txt", str(self.out)]
         with self.assertRaises(SystemExit):
             self.run_main(argv)
+
+    def test_save_file_with_path_errors(self):
+        for bad in (
+            "subdir/mysave.v2",
+            "subdir\\mysave.v2",
+            "../mysave.v2",
+        ):
+            with self.subTest(bad=bad):
+                argv = [
+                    "main.py",
+                    "--once",
+                    "--files",
+                    bad,
+                    str(self.out),
+                ]
+                with self.assertRaises(SystemExit):
+                    self.run_main(argv)
 
     def test_empty_save_file_name_errors(self):
         argv = ["main.py", "--once", "--files", "autosave.v2,", str(self.out)]

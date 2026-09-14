@@ -33,12 +33,6 @@ INVENTIONS_MAP_FILE = REPO_DIR / "data" / "inventions_map.json"
 OUTPUT_FILENAME = "goods_prices.csv"
 PROCESSED_FILENAME = "processed_dates.json"
 
-SAVE_FILES = [
-    "autosave.v2",
-    "oldautosave.v2",
-    "olderautosave.v2",
-]
-
 # Watch mode tracks only the live autosave. The rotated files are
 # deliberately ignored: after a new save game's first autosave, the game
 # cascades the previous session's saves into oldautosave.v2 /

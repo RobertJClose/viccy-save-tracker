@@ -52,8 +52,9 @@ at the directory matching the save you are about to play.
 
 ### One-shot
 
-Record the autosave file(s) you name and exit. You are responsible for
-picking the files that belong to the save game being tracked:
+Record the save file(s) you name and exit. You are responsible for
+picking the files that belong to the save game being tracked. Each file
+must be a `.v2` file name in the save directory (no paths):
 
 ```bash
 python main.py --once --files autosave.v2 saves\france
@@ -61,6 +62,10 @@ python main.py --once --files autosave.v2 saves\france
 # Backfill from the previous two autosaves (only correct if all three
 # files are from the save game being tracked).
 python main.py --once --files autosave.v2,oldautosave.v2,olderautosave.v2 saves\france
+
+# Record a manual save (stop any watcher first, and point at the output
+# directory for that world).
+python main.py --once --files mysave.v2 saves\france
 ```
 
 ### Watch mode
@@ -153,14 +158,15 @@ recreate it on the next run (with a warning on stderr).
 
 The script looks for `autosave.v2` in the **parent** directory of the
 repository. In watch mode that is the only file it reads; in one-shot
-mode it reads whatever files you name via `--files` (which must be one
-of the file names listed in the `SAVE_FILES` constant):
+mode it reads whatever `.v2` files you name via `--files` (plain file
+names in the save directory, no paths):
 
 ```
 save games\
   autosave.v2
   oldautosave.v2
   olderautosave.v2
+  mysave.v2
   tracker\
     main.py
     core\

@@ -32,7 +32,7 @@ save games\                <- Victoria II's save directory (parent of the repo)
   olderautosave.v2         <- two autosaves ago
   tracker\                 <- THIS REPO (the script lives here)
     main.py                  <- entrypoint (CLI, watch loop, orchestration)
-    core\                    <- shared infra: config (paths, SAVE_FILES,
+    core\                    <- shared infra: config (paths,
                                 GAME_DIR setting), parsing (dates, player
                                 tag, country-block isolation), ledger
                                 (processed-dates, output paths)
@@ -67,11 +67,17 @@ can locate the `.v2` files at `Path(__file__).resolve().parent.parent`.
 ```bash
 # One-shot: record the file(s) you name and exit. It is your
 # responsibility to pick the files that belong to this save game.
+# Each --files entry must be a .v2 file name in the save directory
+# (no paths).
 python main.py --once --files autosave.v2 saves\france
 
 # The same, but also backfill from the previous two autosaves (only
 # correct if all three files are from the save game being tracked).
 python main.py --once --files autosave.v2,oldautosave.v2,olderautosave.v2 saves\france
+
+# Manual save: stop any watcher first, then record that file into the
+# output directory for its world.
+python main.py --once --files mysave.v2 saves\france
 
 # Watch: poll the live autosave; new autosaves are processed as they
 # appear. Ctrl+C to stop.
@@ -239,5 +245,6 @@ If the file is missing or corrupt, the script starts with an empty set
   `--once --files` for manual recovery). Do not reintroduce them into
   the watch loop without solving the cross-world contamination.
 - **`--once` is a manual operation:** it requires `--files` naming the
-  specific save file(s) to record. Correctness is the user's
+  specific `.v2` save file(s) to record (plain file names in the save
+  directory, no paths). Correctness is the user's
   responsibility; the script intentionally does not guess.

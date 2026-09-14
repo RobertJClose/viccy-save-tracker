@@ -10,7 +10,6 @@ from core.config import (
     PROCESSED_FILENAME,
     REPO_DIR,
     SAVE_DIR,
-    SAVE_FILES,
     WATCH_FILES,
 )
 from core.ledger import (
@@ -125,7 +124,7 @@ def process_save(
 
 def process_existing_saves(output_dir: Path, files: list[str]) -> None:
     """
-    Process the user-chosen autosave files (see --files).
+    Process the user-chosen save files (see --files).
     """
 
     output_file, processed_file = output_paths(output_dir)
@@ -235,7 +234,7 @@ def main() -> None:
         "--once",
         action="store_true",
         help=(
-            "Record the autosave file(s) named by --files, then exit. "
+            "Record the save file(s) named by --files, then exit. "
             "Requires --files."
         ),
     )
@@ -251,7 +250,9 @@ def main() -> None:
         metavar="FILE[,FILE...]",
         help=(
             "Comma-separated save file(s) to record with --once, e.g. "
-            "autosave.v2 or autosave.v2,oldautosave.v2,olderautosave.v2. "
+            "autosave.v2, mysave.v2 or "
+            "autosave.v2,oldautosave.v2,olderautosave.v2. "
+            "Each file must be a .v2 file name in the save directory. "
             "You are responsible for choosing the files that belong to the "
             "save game being tracked."
         ),
@@ -273,10 +274,20 @@ def main() -> None:
         for filename in files:
             if not filename:
                 parser.error("Empty save file name in --files.")
-            if filename not in SAVE_FILES:
+            if (
+                "/" in filename
+                or "\\" in filename
+                or Path(filename).name != filename
+            ):
                 parser.error(
-                    f"Unknown save file: {filename}. "
-                    f"Expected one of: {', '.join(SAVE_FILES)}"
+                    f"Invalid save file: {filename}. "
+                    "--files accepts only .v2 file names in the save "
+                    "directory (no paths)."
+                )
+            if not filename.lower().endswith(".v2"):
+                parser.error(
+                    f"Invalid save file: {filename}. "
+                    "--files accepts only .v2 files."
                 )
 
     # The output directory must already exist. It is how the user tells us
