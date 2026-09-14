@@ -50,7 +50,8 @@ save games\                <- Victoria II's save directory (parent of the repo)
     data\
       inventions_map.json      committed vanilla mapping (generated, index == ID)
     example_saves\
-      example.v2             <- example save for agents to inspect
+      example_japan_1836.v2  <- example save for agents to inspect
+      example_japan_1845.v2
     tests\                   <- per-module tests + helpers.py (shared fixtures)
   saves\<output-dir>        <- user-chosen per-world output (see below)
     goods_prices.csv       <- output CSV (created at runtime)
@@ -106,7 +107,7 @@ python -m unittest discover -s tests -v
 
 The tests document the script's current behaviour end-to-end, including
 the parsing helpers, the dedup ledger, the CSV output format, CLI
-validation, and watch mode. The real fixture `example_saves/example.v2` is parsed as an
+validation, and watch mode. The real fixture `example_saves/example_japan_1836.v2` is parsed as an
 integration test, so good-discovery (including late-game goods like
 `automobiles` and `radio`) is verified.
 
@@ -140,7 +141,7 @@ worldmarket=
 
 Each line inside the block is `good_name=decimal_price`.
 
-See `example_saves/example.v2` for a full sample (start-of-game date, so no late-game
+See `example_saves/example_japan_1836.v2` for a full sample (start-of-game date, so no late-game
 goods or events).
 
 ## CSV schemas
@@ -226,7 +227,7 @@ If the file is missing or corrupt, the script starts with an empty set
   `invention = <name>` cross-references are never collected. Names may
   contain `:`, `.` and leading digits (`genetics:_heredity`,
   `15_inch_main_armament`). `data/inventions_map.json` is generated once via
-  `python -m setup.initialise --check-save example_saves/example.v2` (validates count ==
+  `python -m setup.initialise --check-save example_saves/example_japan_1836.v2` (validates count ==
   max save ID plus anchor IDs) and committed as the vanilla default; a
   modded install re-runs with `--game-dir`/`--output`. `GAME_DIR` in
   `core/config.py` is the user-edited install root.

@@ -36,7 +36,7 @@ import into LibreOffice Calc.
 
    ```bash
     # Edit GAME_DIR in core/config.py first, or pass --game-dir explicitly.
-    python -m setup.initialise --check-save example_saves/example.v2
+     python -m setup.initialise --check-save example_saves/example_japan_1836.v2
     ```
 
     `python -m setup.initialise --list` shows the available setup tasks.
@@ -184,7 +184,8 @@ save games\
     data\
       inventions_map.json
     example_saves\
-      example.v2
+      example_japan_1836.v2
+      example_japan_1845.v2
     saves\france\
       goods_prices.csv
       technology_changes.csv
