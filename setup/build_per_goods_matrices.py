@@ -348,15 +348,20 @@ ANCHORS = (
 )
 
 
-def check_anchors(
+def check_value_anchors(
     tech_groups: dict[str, list[tuple[str, dict[str, float]]]],
     invention_groups: dict[str, list[tuple[str, dict[str, float]]]],
+    anchors: tuple[tuple[str, str, str, str, float], ...],
 ) -> None:
-    """Fail if a vanilla anchor cell does not hold its predicted value."""
+    """Fail if a vanilla anchor cell does not hold its predicted value.
+
+    Each anchor is (kind, group, source, row, expected) with kind one of
+    "technology"/"invention". Shared by the per-category matrix tasks.
+    """
     lookups = {"technology": tech_groups, "invention": invention_groups}
     missing: list[str] = []
 
-    for kind, group, source, row, expected in ANCHORS:
+    for kind, group, source, row, expected in anchors:
         columns = dict(lookups[kind].get(group, []))
         actual = columns.get(source, {}).get(row)
 
@@ -369,6 +374,91 @@ def check_anchors(
             + "; ".join(missing)
             + ". The effect parser is wrong; not writing the matrices."
         )
+
+
+def check_anchors(
+    tech_groups: dict[str, list[tuple[str, dict[str, float]]]],
+    invention_groups: dict[str, list[tuple[str, dict[str, float]]]],
+) -> None:
+    """Fail if a vanilla anchor cell does not hold its predicted value."""
+    check_value_anchors(tech_groups, invention_groups, ANCHORS)
+
+
+def check_rows_covered(
+    rows: tuple[str, ...],
+    tech_groups: dict[str, list[tuple[str, dict[str, float]]]],
+    invention_groups: dict[str, list[tuple[str, dict[str, float]]]],
+    reform_groups: dict[str, list[tuple[str, dict[str, float]]]],
+) -> None:
+    """Fail if a category row never occurs in any column (vanilla only).
+
+    Catches typos in a task's row set: every agreed name must be granted
+    by at least one source.
+    """
+    seen = {
+        name
+        for groups in (tech_groups, invention_groups, reform_groups)
+        for columns in groups.values()
+        for _, values in columns
+        for name in values
+    }
+    missing = sorted(set(rows) - seen)
+
+    if missing:
+        raise ValueError(
+            f"Category rows never granted by any source: {missing}. "
+            "The row set is wrong; not writing the matrices."
+        )
+
+
+def render_exact_matrix(
+    columns: list[tuple[str, dict[str, float]]], rows: tuple[str, ...]
+) -> str:
+    """Render one category CSV: fixed rows, ``0.0`` for no effect."""
+    lines = ["modifier," + ",".join(name for name, _ in columns)]
+
+    for row in rows:
+        lines.append(
+            row
+            + ","
+            + ",".join(
+                format_number(values.get(row, 0.0)) for _, values in columns
+            )
+        )
+
+    return "\n".join(lines) + "\n"
+
+
+def write_category_tree(
+    output_dir: Path,
+    filename: str,
+    rows: tuple[str, ...],
+    tech_groups: dict[str, list[tuple[str, dict[str, float]]]],
+    invention_groups: dict[str, list[tuple[str, dict[str, float]]]],
+    reform_groups: dict[str, list[tuple[str, dict[str, float]]]],
+) -> list[Path]:
+    """Write one category file per existing group dir; return files written.
+
+    Files land alongside the per-goods matrices
+    (``tech_modifiers/<type>/``, ``invention_modifiers/<type>/``,
+    ``westernisation_modifiers/<group>/``), so group directories are
+    shared, never duplicated.
+    """
+    written: list[Path] = []
+
+    for dirname, groups in (
+        ("tech_modifiers", tech_groups),
+        ("invention_modifiers", invention_groups),
+        ("westernisation_modifiers", reform_groups),
+    ):
+        for group, columns in groups.items():
+            group_dir = output_dir / dirname / group
+            group_dir.mkdir(parents=True, exist_ok=True)
+            path = group_dir / filename
+            path.write_text(render_exact_matrix(columns, rows), encoding="utf-8")
+            written.append(path)
+
+    return written
 
 
 def tech_names_only(

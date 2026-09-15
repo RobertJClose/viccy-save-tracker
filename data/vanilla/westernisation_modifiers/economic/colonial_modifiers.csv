@@ -1,0 +1,5 @@
+modifier,no_land_reform,yes_land_reform,no_admin_reform,yes_admin_reform,no_finance_reform,yes_finance_reform,finance_reform_two,no_education_reform,yes_education_reform,no_transport_improv,yes_transport_improv,no_pre_indust,yes_pre_indust,no_industrial_construction,yes_industrial_construction
+colonial_life_rating,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+colonial_migration,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+colonial_points,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+colonial_prestige,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

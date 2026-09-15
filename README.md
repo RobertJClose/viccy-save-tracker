@@ -45,10 +45,13 @@ import into LibreOffice Calc.
     (`data/vanilla/inventions_map.json`), the exhaustive
     modifier-name list (`data/vanilla/modifiers_from_research_list.txt`, every numeric
     tech/invention/reform effect, e.g. `factory_input`,
-    `artillery_defence`, `rgo_goods_output_iron`), and the 24
+    `artillery_defence`, `rgo_goods_output_iron`), the 24
     per-goods modifier matrices (`data/vanilla/{tech,invention,
-    westernisation}_modifiers/<group>/{rgo_goods,factory_goods}_modifiers.csv`:
-    one value per source and per-good effect, `0.0` for no effect).
+    westernisation}_modifiers/<group>/{rgo_goods,factory_goods}_modifiers.csv`),
+    and one `<category>_modifiers.csv` per group directory for each of the
+    colonial, prestige, population, diplomacy, other, research,
+    economic and military categories.
+    Every matrix holds one value per source, with `0.0` for no effect.
 
     Reference data lives in one directory per game variant
     (`data/vanilla/`; modded installs generate `data/<mod>/` siblings).
@@ -203,16 +206,31 @@ save games\
       initialise.py
       build_inventions_map.py
       build_modifiers_from_research_list.py
+      build_per_goods_matrices.py
+      build_per_unit_matrices.py
+      build_{colonial,prestige,population,diplomacy,other}_matrices.py
+      build_{research,economic}_matrices.py
+      build_military_matrices.py
     data\
       vanilla\                    <- committed vanilla reference data
         inventions_map.json
         modifiers_from_research_list.txt
-        tech_modifiers\<type>\      <- per-goods matrices: one dir per
-        invention_modifiers\<type>\    tech/invention type (army, commerce,
-        westernisation_modifiers\      culture, industry, navy) or reform
-          <group>\                     group (economic, military), each holding
-            rgo_goods_modifiers.csv    rgo_goods_modifiers.csv and
-            factory_goods_modifiers.csv  factory_goods_modifiers.csv
+        tech_modifiers\<type>\      <- matrices: one dir per tech/invention
+        invention_modifiers\<type>\    type (army, commerce, culture,
+        westernisation_modifiers\      industry, navy) or reform group
+          <group>\                     (economic, military), each holding
+            rgo_goods_modifiers.csv    rgo/factory per-goods files, land/naval
+            factory_goods_modifiers.csv  per-unit files, plus one
+            per_unit_land_modifiers.csv  <category>_modifiers.csv per
+            per_unit_naval_modifiers.csv   implemented category (colonial,
+            colonial_modifiers.csv       prestige, population, diplomacy,
+            prestige_modifiers.csv       other, research, economic)
+            population_modifiers.csv
+            diplomacy_modifiers.csv
+            other_modifiers.csv
+            research_modifiers.csv
+            economic_modifiers.csv
+            military_modifiers.csv
       <mod>\                     <- per-mod reference data (generated, not committed)
     example_saves\
       example_japan_1836.v2

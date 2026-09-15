@@ -50,16 +50,32 @@ Documents\Paradox Interactive\Victoria II\
         build_inventions_map.py  invention ID -> name mapping builder
         build_modifiers_from_research_list.py  exhaustive research-modifier list builder
         build_per_goods_matrices.py  24 per-goods matrix files builder
+        build_per_unit_matrices.py  24 per-unit matrix files builder
+                                 (per_unit_land/naval split)
+        build_{colonial,prestige,population,diplomacy,other}_matrices.py
+                                 one small-category matrix task each
+        build_{research,economic}_matrices.py
+        build_military_matrices.py  military category matrix task
       data\
         vanilla\                 committed vanilla reference data (generated)
           inventions_map.json      ID -> name mapping (generated, index == ID)
           modifiers_from_research_list.txt       exhaustive research modifiers (generated)
-          tech_modifiers\<type>\    per-goods matrices, one dir per tech/
-          invention_modifiers\<type>\  invention type or reform group,
-          westernisation_modifiers\    each holding rgo_goods_modifiers.csv
-            <group>\                   and factory_goods_modifiers.csv
-              rgo_goods_modifiers.csv
-              factory_goods_modifiers.csv
+          tech_modifiers\<type>\    matrices, one dir per tech/invention
+          invention_modifiers\<type>\  type or reform group, each holding
+          westernisation_modifiers\    rgo/factory per-goods files, land/naval
+            <group>\                   per-unit files, plus one
+              rgo_goods_modifiers.csv    <category>_modifiers.csv per
+              factory_goods_modifiers.csv  implemented category (colonial,
+              per_unit_land_modifiers.csv  prestige, population, diplomacy,
+              per_unit_naval_modifiers.csv   other, research, economic)
+              colonial_modifiers.csv
+              prestige_modifiers.csv
+              population_modifiers.csv
+              diplomacy_modifiers.csv
+              other_modifiers.csv
+              research_modifiers.csv
+              economic_modifiers.csv
+              military_modifiers.csv
       example_saves\
         example_japan_1836.v2  <- example save for agents to inspect
         example_japan_1845.v2
@@ -270,9 +286,27 @@ If the file is missing or corrupt, the script starts with an empty set
   (`%g`, `0.0` for no effect) — cross-source summing stays in the spreadsheet.
   Westernisation files are header-only (reforms grant no per-good bonuses).
   A composite repeated within one source, a failed value anchor, or a
-  `--check-save` tech/level missing from the columns all fail loudly. A
-  `None` third TASKS entry marks a whole-tree task (forwarded `--output-dir`
-  instead of `--output <file>`).
+   `--check-save` tech/level missing from the columns all fail loudly. A
+   `None` third TASKS entry marks a whole-tree task (forwarded `--output-dir`
+   instead of `--output <file>`).
+- **Small categories mirror per-goods, one script each:** colonial, prestige,
+  population, diplomacy, other, research, economic and military each own a
+  `setup/build_<category>_matrices.py`
+  task writing `<category>_modifiers.csv` into the same 12 group directories
+  (no new top-level dirs, no monolith module). Rows are the agreed exact name
+  sets (verbatim, twins and `seperatism` included); everything mechanical
+  (value collectors, `format_number`, exact-matrix rendering, anchor/coverage
+  checks, `--check-save` column validation) is imported from
+  `setup/build_per_goods_matrices.py`. Any future category follows the
+  same template; per-unit is a 24-file variant (see next).
+- **Per-unit mirrors per-goods with a land/naval split:** `setup/build_per_unit_matrices.py`
+  writes 24 CSVs (`{tech,invention,westernisation}_modifiers/<group>/
+  per_unit_{land,naval}_modifiers.csv`): rows are the unit-scope composites
+  whose scope is a land unit (air counts as land) or a naval unit,
+  everything else identical to per-goods (declaration-order columns,
+  single-source `%g` values, header-only westernisation files, loud
+  anchors/duplicates). A test locks the agreed 11-land/7-naval scope
+  split.
 - **Stdlib only:** The script uses no third-party packages.
 - **Encoding:** Save files are read as UTF-8 with `errors='replace'`
   (one bad byte must not abort the whole file).

@@ -402,3 +402,426 @@ def make_per_goods_game_dir(root: Path) -> Path:
         PGO_ISSUES_FIXTURE, encoding="utf-8"
     )
     return game_dir
+
+
+# A synthetic game install for the small-category matrix tasks: one tech
+# and one invention granting a colonial, prestige, population, diplomacy
+# and other value each, plus effect-less entries and trigger vocabulary
+# that must be ignored. Reforms grant none of these (as in vanilla).
+CAT_TECH_FIXTURE = """#tech_group_one
+col_tech = {
+\tarea = some_area
+\tyear = 1836
+\tcost = 3600
+\tcolonial_points = 100
+\tprestige = 0.05
+\tmax_national_focus = 1
+\tinfluence = 0.1
+\tunit = 1
+\tai_chance = {
+\t\tfactor = 2
+\t}
+}
+plain_tech = {
+\tarea = some_area
+\tyear = 1900
+\tcost = 7200
+}
+"""
+
+CAT_INVENTION_FIXTURE = """col_invention = {
+\tlimit = { col_tech = 1 }
+\tchance = {
+\t\tbase = 2
+\t}
+\teffect = {
+\t\tcolonial_prestige = 0.1
+\t\tpermanent_prestige = 1
+\t\tpop_growth = 0.0002
+\t\tdiplomatic_points = 0.25
+\t}
+}
+effectless_invention = {
+\tlimit = { col_tech = 1 }
+}
+"""
+
+CAT_ISSUES_FIXTURE = """economic_reforms = {
+\tland_reform = {
+\t\tno_land_reform = {
+\t\t\tglobal_pop_militancy_modifier = -0.005
+\t\t}
+\t\tyes_land_reform = {
+\t\t\tfarm_rgo_eff = 0.25
+\t\t\ton_execute = {
+\t\t\t\teffect = {
+\t\t\t\t\tany_pop = {
+\t\t\t\t\t\tmilitancy = 1
+\t\t\t\t\t}
+\t\t\t\t}
+\t\t\t}
+\t\t}
+\t}
+}
+military_reforms = {
+\tarmy_schools = {
+\t\tno_army_schools = {
+\t\t\tglobal_pop_militancy_modifier = -0.005
+\t\t}
+\t\tyes_army_schools = {
+\t\t\tland_organisation = 0.1
+\t\t}
+\t}
+}
+"""
+
+# A synthetic save whose techs and reform levels all exist in the
+# CAT_* fixtures above.
+CAT_SAVE = """date="1836.1.2"
+player="TST"
+TST=
+{
+\ttechnology=
+\t{
+\t\tcol_tech={1 0.000}
+\t}
+\tland_reform=yes_land_reform
+\tarmy_schools=no_army_schools
+}
+"""
+
+
+def make_category_game_dir(root: Path) -> Path:
+    game_dir = root / "game"
+    (game_dir / "technologies").mkdir(parents=True)
+    (game_dir / "inventions").mkdir(parents=True)
+    (game_dir / "common").mkdir(parents=True)
+    (game_dir / "technologies" / "army_tech.txt").write_text(
+        CAT_TECH_FIXTURE, encoding="utf-8"
+    )
+    (game_dir / "inventions" / "army_inventions.txt").write_text(
+        CAT_INVENTION_FIXTURE, encoding="utf-8"
+    )
+    (game_dir / "common" / "issues.txt").write_text(
+        CAT_ISSUES_FIXTURE, encoding="utf-8"
+    )
+    return game_dir
+
+
+# A synthetic game install for the research/economic matrix tasks: techs
+# and inventions granting research and economic values each, plus
+# effect-less entries and trigger vocabulary that must be ignored.
+# Reforms grant research values (technology_cost) but no economic ones
+# beyond the shared scalar set, mirroring the vanilla split.
+RES_TECH_FIXTURE = """#tech_group_one
+res_tech = {
+\tarea = some_area
+\tyear = 1836
+\tcost = 3600
+\ttax_eff = 3
+\tfactory_input = -0.01
+\tfarm_rgo_eff = 0.25
+\tincrease_research = 0.5
+\teducation_efficiency = 0.1
+\tai_chance = {
+\t\tfactor = 2
+\t}
+}
+plain_tech = {
+\tarea = some_area
+\tyear = 1900
+\tcost = 7200
+}
+"""
+
+RES_INVENTION_FIXTURE = """res_invention = {
+\tlimit = { res_tech = 1 }
+\tchance = {
+\t\tbase = 2
+\t}
+\teffect = {
+\t\ttax_eff = 1
+\t\trgo_output = 0.05
+\t\tplurality = 0.1
+\t\teducation_efficiency_modifier = 0.15
+\t}
+}
+effectless_invention = {
+\tlimit = { res_tech = 1 }
+}
+"""
+
+RES_ISSUES_FIXTURE = """economic_reforms = {
+\tland_reform = {
+\t\tno_land_reform = {
+\t\t\tglobal_pop_militancy_modifier = -0.005
+\t\t}
+\t\tyes_land_reform = {
+\t\t\ttechnology_cost = 8000
+\t\t\tfarm_rgo_eff = 0.25
+\t\t\ton_execute = {
+\t\t\t\teffect = {
+\t\t\t\t\tany_pop = {
+\t\t\t\t\t\tmilitancy = 1
+\t\t\t\t\t}
+\t\t\t\t}
+\t\t\t}
+\t\t}
+\t}
+}
+military_reforms = {
+\tarmy_schools = {
+\t\tno_army_schools = {
+\t\t\tglobal_pop_militancy_modifier = -0.005
+\t\t}
+\t\tyes_army_schools = {
+\t\t\tland_organisation = 0.1
+\t\t}
+\t}
+}
+"""
+
+# A synthetic save whose techs and reform levels all exist in the
+# RES_* fixtures above.
+RES_SAVE = """date="1836.1.2"
+player="TST"
+TST=
+{
+\ttechnology=
+\t{
+\t\tres_tech={1 0.000}
+\t}
+\tland_reform=yes_land_reform
+\tarmy_schools=no_army_schools
+}
+"""
+
+
+def make_research_economic_game_dir(root: Path) -> Path:
+    game_dir = root / "game"
+    (game_dir / "technologies").mkdir(parents=True)
+    (game_dir / "inventions").mkdir(parents=True)
+    (game_dir / "common").mkdir(parents=True)
+    (game_dir / "technologies" / "army_tech.txt").write_text(
+        RES_TECH_FIXTURE, encoding="utf-8"
+    )
+    (game_dir / "inventions" / "army_inventions.txt").write_text(
+        RES_INVENTION_FIXTURE, encoding="utf-8"
+    )
+    (game_dir / "common" / "issues.txt").write_text(
+        RES_ISSUES_FIXTURE, encoding="utf-8"
+    )
+    return game_dir
+
+
+# A synthetic game install for the per-unit matrices task: a tech with
+# land-unit blocks, an invention with land and naval blocks, and reforms
+# with scalar-only levels (as in vanilla, where westernisation grants no
+# per-unit bonuses).
+PU_TECH_FIXTURE = """#tech_group_one
+pu_tech = {
+\tarea = some_area
+\tyear = 1836
+\tcost = 3600
+\tinfantry = {
+\t\tattack = 0.5
+\t\tdefence = 1
+\t}
+\tplane = {
+\t\treconnaissance = 2
+\t}
+\tmorale = 0.5
+\tai_chance = {
+\t\tfactor = 2
+\t}
+}
+plain_tech = {
+\tarea = some_area
+\tyear = 1900
+\tcost = 7200
+}
+"""
+
+PU_INVENTION_FIXTURE = """pu_invention = {
+\tlimit = { pu_tech = 1 }
+\tchance = {
+\t\tbase = 2
+\t}
+\teffect = {
+\t\tinfantry = {
+\t\t\tdefence = 2
+\t\t}
+\t\tcruiser = {
+\t\t\ttorpedo_attack = 8
+\t\t}
+\t}
+}
+effectless_invention = {
+\tlimit = { pu_tech = 1 }
+}
+"""
+
+PU_ISSUES_FIXTURE = """economic_reforms = {
+\tland_reform = {
+\t\tno_land_reform = {
+\t\t\tglobal_pop_militancy_modifier = -0.005
+\t\t}
+\t\tyes_land_reform = {
+\t\t\tfarm_rgo_eff = 0.25
+\t\t\ton_execute = {
+\t\t\t\teffect = {
+\t\t\t\t\tany_pop = {
+\t\t\t\t\t\tmilitancy = 1
+\t\t\t\t\t}
+\t\t\t\t}
+\t\t\t}
+\t\t}
+\t}
+}
+military_reforms = {
+\tarmy_schools = {
+\t\tno_army_schools = {
+\t\t\tglobal_pop_militancy_modifier = -0.005
+\t\t}
+\t\tyes_army_schools = {
+\t\t\tland_organisation = 0.1
+\t\t}
+\t}
+}
+"""
+
+# A synthetic save whose techs and reform levels all exist in the
+# PU_* fixtures above.
+PU_SAVE = """date="1836.1.2"
+player="TST"
+TST=
+{
+\ttechnology=
+\t{
+\t\tpu_tech={1 0.000}
+\t}
+\tland_reform=yes_land_reform
+\tarmy_schools=no_army_schools
+}
+"""
+
+
+def make_per_unit_game_dir(root: Path) -> Path:
+    game_dir = root / "game"
+    (game_dir / "technologies").mkdir(parents=True)
+    (game_dir / "inventions").mkdir(parents=True)
+    (game_dir / "common").mkdir(parents=True)
+    (game_dir / "technologies" / "army_tech.txt").write_text(
+        PU_TECH_FIXTURE, encoding="utf-8"
+    )
+    (game_dir / "inventions" / "navy_inventions.txt").write_text(
+        PU_INVENTION_FIXTURE, encoding="utf-8"
+    )
+    (game_dir / "common" / "issues.txt").write_text(
+        PU_ISSUES_FIXTURE, encoding="utf-8"
+    )
+    return game_dir
+
+
+# A synthetic game install for the military matrices task: a tech and an
+# invention granting military scalars and base composites, plus
+# effect-less entries and trigger vocabulary that must be ignored.
+# Reforms grant military scalars (land_organisation), mirroring vanilla.
+MIL_TECH_FIXTURE = """#tech_group_one
+mil_tech = {
+\tarea = some_area
+\tyear = 1836
+\tcost = 3600
+\tmorale = 0.25
+\tmilitary_tactics = 0.25
+\tarmy_base = {
+\t\tsupply_consumption = 0.05
+\t}
+\tai_chance = {
+\t\tfactor = 2
+\t}
+}
+plain_tech = {
+\tarea = some_area
+\tyear = 1900
+\tcost = 7200
+}
+"""
+
+MIL_INVENTION_FIXTURE = """mil_invention = {
+\tlimit = { mil_tech = 1 }
+\tchance = {
+\t\tbase = 2
+\t}
+\teffect = {
+\t\tnavy_base = {
+\t\t\tmaximum_speed = 1
+\t\t}
+\t\twar_exhaustion = -0.1
+\t}
+}
+effectless_invention = {
+\tlimit = { mil_tech = 1 }
+}
+"""
+
+MIL_ISSUES_FIXTURE = """economic_reforms = {
+\tland_reform = {
+\t\tno_land_reform = {
+\t\t\tglobal_pop_militancy_modifier = -0.005
+\t\t}
+\t\tyes_land_reform = {
+\t\t\tfarm_rgo_eff = 0.25
+\t\t\ton_execute = {
+\t\t\t\teffect = {
+\t\t\t\t\tany_pop = {
+\t\t\t\t\t\tmilitancy = 1
+\t\t\t\t\t}
+\t\t\t\t}
+\t\t\t}
+\t\t}
+\t}
+}
+military_reforms = {
+\tarmy_schools = {
+\t\tno_army_schools = {
+\t\t\tglobal_pop_militancy_modifier = -0.005
+\t\t}
+\t\tyes_army_schools = {
+\t\t\tland_organisation = 0.1
+\t\t}
+\t}
+}
+"""
+
+# A synthetic save whose techs and reform levels all exist in the
+# MIL_* fixtures above.
+MIL_SAVE = """date="1836.1.2"
+player="TST"
+TST=
+{
+\ttechnology=
+\t{
+\t\tmil_tech={1 0.000}
+\t}
+\tland_reform=yes_land_reform
+\tarmy_schools=yes_army_schools
+}
+"""
+
+
+def make_military_game_dir(root: Path) -> Path:
+    game_dir = root / "game"
+    (game_dir / "technologies").mkdir(parents=True)
+    (game_dir / "inventions").mkdir(parents=True)
+    (game_dir / "common").mkdir(parents=True)
+    (game_dir / "technologies" / "army_tech.txt").write_text(
+        MIL_TECH_FIXTURE, encoding="utf-8"
+    )
+    (game_dir / "inventions" / "navy_inventions.txt").write_text(
+        MIL_INVENTION_FIXTURE, encoding="utf-8"
+    )
+    (game_dir / "common" / "issues.txt").write_text(
+        MIL_ISSUES_FIXTURE, encoding="utf-8"
+    )
+    return game_dir

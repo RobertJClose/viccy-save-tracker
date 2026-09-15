@@ -1,7 +1,8 @@
 """One-shot setup tasks (run manually, not part of tracking).
 
-Today this builds the invention ID -> name mapping and the exhaustive
-modifier-name list; future initialisation work registers in TASKS below.
+Today this builds the invention ID -> name mapping, the exhaustive
+research-modifier list, and the per-category modifier matrices; future
+initialisation work registers in TASKS below.
 
 Reference data lives in one directory per game variant: data/vanilla/
 is the committed vanilla default, and modded installs generate sibling
@@ -30,6 +31,15 @@ from setup.build_modifiers_from_research_list import (
     main as build_modifiers_from_research_main,
 )
 from setup.build_per_goods_matrices import main as build_per_goods_matrices_main
+from setup.build_colonial_matrices import main as build_colonial_matrices_main
+from setup.build_prestige_matrices import main as build_prestige_matrices_main
+from setup.build_population_matrices import main as build_population_matrices_main
+from setup.build_diplomacy_matrices import main as build_diplomacy_matrices_main
+from setup.build_other_matrices import main as build_other_matrices_main
+from setup.build_research_matrices import main as build_research_matrices_main
+from setup.build_economic_matrices import main as build_economic_matrices_main
+from setup.build_per_unit_matrices import main as build_per_unit_matrices_main
+from setup.build_military_matrices import main as build_military_matrices_main
 
 TASKS = {
     "inventions-map": (
@@ -46,6 +56,51 @@ TASKS = {
     "per-goods-matrices": (
         "Build the 24 per-goods modifier matrices from the game install.",
         build_per_goods_matrices_main,
+        None,
+    ),
+    "colonial-matrices": (
+        "Build the colonial modifier matrices from the game install.",
+        build_colonial_matrices_main,
+        None,
+    ),
+    "prestige-matrices": (
+        "Build the prestige modifier matrices from the game install.",
+        build_prestige_matrices_main,
+        None,
+    ),
+    "population-matrices": (
+        "Build the population modifier matrices from the game install.",
+        build_population_matrices_main,
+        None,
+    ),
+    "diplomacy-matrices": (
+        "Build the diplomacy modifier matrices from the game install.",
+        build_diplomacy_matrices_main,
+        None,
+    ),
+    "other-matrices": (
+        "Build the other-modifier matrices from the game install.",
+        build_other_matrices_main,
+        None,
+    ),
+    "research-matrices": (
+        "Build the research modifier matrices from the game install.",
+        build_research_matrices_main,
+        None,
+    ),
+    "economic-matrices": (
+        "Build the economic modifier matrices from the game install.",
+        build_economic_matrices_main,
+        None,
+    ),
+    "per-unit-matrices": (
+        "Build the 24 per-unit modifier matrices from the game install.",
+        build_per_unit_matrices_main,
+        None,
+    ),
+    "military-matrices": (
+        "Build the military modifier matrices from the game install.",
+        build_military_matrices_main,
         None,
     ),
 }

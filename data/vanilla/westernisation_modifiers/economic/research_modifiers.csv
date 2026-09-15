@@ -1,0 +1,7 @@
+modifier,no_land_reform,yes_land_reform,no_admin_reform,yes_admin_reform,no_finance_reform,yes_finance_reform,finance_reform_two,no_education_reform,yes_education_reform,no_transport_improv,yes_transport_improv,no_pre_indust,yes_pre_indust,no_industrial_construction,yes_industrial_construction
+civilization_progress_modifier,0,0.15,0,0.15,0,0.15,0.35,0,0.15,0,0.15,0,0.2,0,0.25
+education_efficiency,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+education_efficiency_modifier,0,0,0,0,0,0,0,0,0.15,0,0,0,0,0,0
+increase_research,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+plurality,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+technology_cost,0,8000,0,10000,0,10000,15000,0,10000,0,10000,0,15000,0,17500

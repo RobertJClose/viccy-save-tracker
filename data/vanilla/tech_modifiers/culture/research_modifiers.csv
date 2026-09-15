@@ -1,0 +1,7 @@
+modifier,classicism_n_early_romanticism,romanticism,realism,impressionism,expressionism,mass_culture_n_the_avant_garde,late_enlightenment_philosophy,idealism,empiricism,analytic_philosophy,phenomenology_n_hermeneutic,anti__rationalism,malthusian_thought,positivism,functionalism,biologism,social_science,social_alienation,enlightenment_thought,ideological_thought,state_n_government,nationalism_n_imperialism,revolution_n_counterrevolution,mass_politics,introspectionism,associationism,phenomenalism,experimental_psychology,psychoanalysis,behaviorism
+civilization_progress_modifier,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+education_efficiency,0,0,0,0,0,0,0,0,0,0,0,0,0.1,0.1,0.1,0.1,0.1,0.1,0,0,0,0,0,0,0,0,0,0,0,0
+education_efficiency_modifier,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+increase_research,0,0,0,0,0,0,0.5,0.5,0.5,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+plurality,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+technology_cost,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
