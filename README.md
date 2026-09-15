@@ -43,7 +43,7 @@ import into LibreOffice Calc.
 
     This builds the invention ID → name mapping
     (`data/vanilla/inventions_map.json`), the exhaustive
-    modifier-name list (`data/vanilla/modifiers_list.txt`, every numeric
+    modifier-name list (`data/vanilla/modifiers_from_research_list.txt`, every numeric
     tech/invention/reform effect, e.g. `factory_input`,
     `artillery_defence`, `rgo_goods_output_iron`), and the 24
     per-goods modifier matrices (`data/vanilla/{tech,invention,
@@ -202,11 +202,11 @@ save games\
     setup\
       initialise.py
       build_inventions_map.py
-      build_modifiers_list.py
+      build_modifiers_from_research_list.py
     data\
       vanilla\                    <- committed vanilla reference data
         inventions_map.json
-        modifiers_list.txt
+        modifiers_from_research_list.txt
         tech_modifiers\<type>\      <- per-goods matrices: one dir per
         invention_modifiers\<type>\    tech/invention type (army, commerce,
         westernisation_modifiers\      culture, industry, navy) or reform

@@ -23,10 +23,12 @@ from setup.build_inventions_map import (
     OUTPUT_FILENAME as INVENTIONS_OUTPUT_FILENAME,
 )
 from setup.build_inventions_map import main as build_inventions_map_main
-from setup.build_modifiers_list import (
+from setup.build_modifiers_from_research_list import (
     OUTPUT_FILENAME as MODIFIERS_OUTPUT_FILENAME,
 )
-from setup.build_modifiers_list import main as build_modifiers_list_main
+from setup.build_modifiers_from_research_list import (
+    main as build_modifiers_from_research_main,
+)
 from setup.build_per_goods_matrices import main as build_per_goods_matrices_main
 
 TASKS = {
@@ -35,9 +37,10 @@ TASKS = {
         build_inventions_map_main,
         INVENTIONS_OUTPUT_FILENAME,
     ),
-    "modifiers-list": (
-        "Build modifiers_list.txt (exhaustive modifier names) from the game install.",
-        build_modifiers_list_main,
+    "modifiers-from-research-list": (
+        "Build modifiers_from_research_list.txt (exhaustive research "
+        "modifier names) from the game install.",
+        build_modifiers_from_research_main,
         MODIFIERS_OUTPUT_FILENAME,
     ),
     "per-goods-matrices": (

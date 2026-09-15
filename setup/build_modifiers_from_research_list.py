@@ -1,4 +1,4 @@
-"""One-shot initialisation: build the exhaustive modifier-name list.
+"""One-shot initialisation: build the exhaustive research-modifier list.
 
 Technologies, inventions and westernisation reforms grant the player
 country numeric bonuses (``factory_input = -0.01``,
@@ -47,7 +47,7 @@ ISSUES_PATH = Path("common") / "issues.txt"
 
 # File name this task writes inside the output directory chosen via
 # --output (or setup.initialise --output-dir).
-OUTPUT_FILENAME = "modifiers_list.txt"
+OUTPUT_FILENAME = "modifiers_from_research_list.txt"
 
 # Numeric labels in tech bodies that are metadata, not bonuses.
 TECH_SKIP_SCALARS = {"area", "year", "cost"}
@@ -357,7 +357,7 @@ def write_list(
 ) -> None:
     """Write the alphabetical list; `#` lines are provenance, not data."""
     lines = [
-        f"# Victoria II modifier list ({source})",
+        f"# Victoria II modifiers from research ({source})",
         "# Sources: technologies/*.txt, inventions/*/effect, "
         "common/issues.txt (economic/military reforms)",
         f"# Counts: {tech_count} technologies, "
@@ -384,7 +384,7 @@ def main(argv: list[str] | None = None) -> Path:
         "--output",
         type=Path,
         default=VANILLA_DATA_DIR / OUTPUT_FILENAME,
-        help="Where to write the list (default: data/vanilla/modifiers_list.txt).",
+        help="Where to write the list (default: data/vanilla/modifiers_from_research_list.txt).",
     )
 
     parser.add_argument(

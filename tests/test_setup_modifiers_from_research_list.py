@@ -1,5 +1,6 @@
 """
-Tests for the exhaustive modifier-list setup (setup/build_modifiers_list.py).
+Tests for the exhaustive research-modifier list setup
+(setup/build_modifiers_from_research_list.py).
 
 Run from the repository root:
 
@@ -15,7 +16,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from setup import build_modifiers_list
+from setup import build_modifiers_from_research_list
 from setup import initialise
 from helpers import (
     MOD_EXPECTED_NAMES,
@@ -27,13 +28,13 @@ from helpers import (
 class TestCollectModifiers(unittest.TestCase):
 
     def test_scalars_recorded_metadata_ignored(self):
-        names = build_modifiers_list.collect_modifiers(
+        names = build_modifiers_from_research_list.collect_modifiers(
             "area = some_area\nyear = 1836\ncost = 3600\nfactory_input = -0.01\n"
         )
         self.assertEqual(names, {"factory_input"})
 
     def test_nested_blocks_become_composites(self):
-        names = build_modifiers_list.collect_modifiers(
+        names = build_modifiers_from_research_list.collect_modifiers(
             "artillery = { attack = 0.5 defence = 2 }\n"
             "rgo_goods_output = { iron = 0.25 }\n"
         )
@@ -43,7 +44,7 @@ class TestCollectModifiers(unittest.TestCase):
         )
 
     def test_bare_words_and_strings_ignored(self):
-        names = build_modifiers_list.collect_modifiers(
+        names = build_modifiers_from_research_list.collect_modifiers(
             "activate_building = lumber_mill\n"
             'name = "a { brace"\n'
             "limit = { test_tech = 1 }\n"
@@ -53,26 +54,26 @@ class TestCollectModifiers(unittest.TestCase):
         self.assertEqual(names, {"limit_test_tech"})
 
     def test_quoted_braces_do_not_unbalance(self):
-        names = build_modifiers_list.collect_modifiers(
+        names = build_modifiers_from_research_list.collect_modifiers(
             'label = "weird { value"\ntax_eff = 5\n'
         )
         self.assertEqual(names, {"tax_eff"})
 
     def test_deeper_nesting_joins_full_path(self):
-        names = build_modifiers_list.collect_modifiers(
+        names = build_modifiers_from_research_list.collect_modifiers(
             "outer = { inner = { deep_stat = 1 } }\n"
         )
         self.assertEqual(names, {"outer_inner_deep_stat"})
 
     def test_rebel_org_gain_uses_faction(self):
-        names = build_modifiers_list.collect_modifiers(
+        names = build_modifiers_from_research_list.collect_modifiers(
             "rebel_org_gain = { faction = all value = -0.25 }\n"
         )
         self.assertEqual(names, {"rebel_org_gain_all"})
 
     def test_rebel_org_gain_without_faction_raises(self):
         with self.assertRaises(ValueError):
-            build_modifiers_list.collect_modifiers(
+            build_modifiers_from_research_list.collect_modifiers(
                 "rebel_org_gain = { value = 0.33 }\n"
             )
 
@@ -80,7 +81,7 @@ class TestCollectModifiers(unittest.TestCase):
 class TestBlockHelpers(unittest.TestCase):
 
     def test_top_level_blocks_skip_nested(self):
-        blocks = build_modifiers_list.iter_top_level_blocks(
+        blocks = build_modifiers_from_research_list.iter_top_level_blocks(
             "aaa = {\n"
             "\tx = 1\n"
             "\tnested = {\n"
@@ -95,7 +96,7 @@ class TestBlockHelpers(unittest.TestCase):
         self.assertIn("nested", blocks[0][1])
 
     def test_remove_named_blocks_keeps_rest(self):
-        text = build_modifiers_list.remove_named_blocks(
+        text = build_modifiers_from_research_list.remove_named_blocks(
             "keep = 1\nai_chance = {\n\tfactor = 2\n}\n"
             "also_keep = 2\nai_chance = {\n\tfactor = 3\n}\n",
             {"ai_chance"},
@@ -111,13 +112,13 @@ class TestCollectFromGameDir(unittest.TestCase):
     def test_full_fixture_yields_expected_names(self):
         with tempfile.TemporaryDirectory() as d:
             game_dir = make_modifiers_game_dir(Path(d))
-            techs, tech_count = build_modifiers_list.collect_technology_modifiers(
+            techs, tech_count = build_modifiers_from_research_list.collect_technology_modifiers(
                 game_dir
             )
             inventions, invention_count = (
-                build_modifiers_list.collect_invention_modifiers(game_dir)
+                build_modifiers_from_research_list.collect_invention_modifiers(game_dir)
             )
-            reforms, levels = build_modifiers_list.collect_reform_modifiers(
+            reforms, levels = build_modifiers_from_research_list.collect_reform_modifiers(
                 game_dir
             )
             self.assertEqual(tech_count, 2)
@@ -134,7 +135,7 @@ class TestCollectFromGameDir(unittest.TestCase):
     def test_effect_less_invention_contributes_nothing(self):
         with tempfile.TemporaryDirectory() as d:
             game_dir = make_modifiers_game_dir(Path(d))
-            inventions, _ = build_modifiers_list.collect_invention_modifiers(
+            inventions, _ = build_modifiers_from_research_list.collect_invention_modifiers(
                 game_dir
             )
             self.assertEqual(
@@ -150,7 +151,7 @@ class TestCollectFromGameDir(unittest.TestCase):
     def test_trigger_vocabulary_excluded(self):
         with tempfile.TemporaryDirectory() as d:
             game_dir = make_modifiers_game_dir(Path(d))
-            techs, _ = build_modifiers_list.collect_technology_modifiers(game_dir)
+            techs, _ = build_modifiers_from_research_list.collect_technology_modifiers(game_dir)
             for excluded in (
                 "area",
                 "year",
@@ -165,11 +166,11 @@ class TestCollectFromGameDir(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             with self.assertRaises(FileNotFoundError):
-                build_modifiers_list.collect_technology_modifiers(root)
+                build_modifiers_from_research_list.collect_technology_modifiers(root)
             with self.assertRaises(FileNotFoundError):
-                build_modifiers_list.collect_invention_modifiers(root)
+                build_modifiers_from_research_list.collect_invention_modifiers(root)
             with self.assertRaises(FileNotFoundError):
-                build_modifiers_list.collect_reform_modifiers(root)
+                build_modifiers_from_research_list.collect_reform_modifiers(root)
 
 
 class TestValidateAgainstSave(unittest.TestCase):
@@ -177,9 +178,9 @@ class TestValidateAgainstSave(unittest.TestCase):
     def test_matching_save_passes(self):
         with tempfile.TemporaryDirectory() as d:
             game_dir = make_modifiers_game_dir(Path(d))
-            _, reforms = build_modifiers_list.collect_reform_modifiers(game_dir)
-            build_modifiers_list.validate_against_save(
-                build_modifiers_list.tech_names_only(game_dir),
+            _, reforms = build_modifiers_from_research_list.collect_reform_modifiers(game_dir)
+            build_modifiers_from_research_list.validate_against_save(
+                build_modifiers_from_research_list.tech_names_only(game_dir),
                 reforms,
                 MOD_SAVE,
                 "test.v2",
@@ -188,11 +189,11 @@ class TestValidateAgainstSave(unittest.TestCase):
     def test_unknown_tech_raises(self):
         with tempfile.TemporaryDirectory() as d:
             game_dir = make_modifiers_game_dir(Path(d))
-            _, reforms = build_modifiers_list.collect_reform_modifiers(game_dir)
+            _, reforms = build_modifiers_from_research_list.collect_reform_modifiers(game_dir)
             bad = MOD_SAVE.replace("test_tech_alpha", "mystery_tech")
             with self.assertRaises(ValueError):
-                build_modifiers_list.validate_against_save(
-                    build_modifiers_list.tech_names_only(game_dir),
+                build_modifiers_from_research_list.validate_against_save(
+                    build_modifiers_from_research_list.tech_names_only(game_dir),
                     reforms,
                     bad,
                     "test.v2",
@@ -201,11 +202,11 @@ class TestValidateAgainstSave(unittest.TestCase):
     def test_unknown_reform_level_raises(self):
         with tempfile.TemporaryDirectory() as d:
             game_dir = make_modifiers_game_dir(Path(d))
-            _, reforms = build_modifiers_list.collect_reform_modifiers(game_dir)
+            _, reforms = build_modifiers_from_research_list.collect_reform_modifiers(game_dir)
             bad = MOD_SAVE.replace("yes_land_reform", "super_land_reform")
             with self.assertRaises(ValueError):
-                build_modifiers_list.validate_against_save(
-                    build_modifiers_list.tech_names_only(game_dir),
+                build_modifiers_from_research_list.validate_against_save(
+                    build_modifiers_from_research_list.tech_names_only(game_dir),
                     reforms,
                     bad,
                     "test.v2",
@@ -219,7 +220,7 @@ class TestModifiersListMain(unittest.TestCase):
             root = Path(d)
             game_dir = make_modifiers_game_dir(root)
             out = root / "modifiers.txt"
-            result = build_modifiers_list.main(
+            result = build_modifiers_from_research_list.main(
                 [
                     "--game-dir", str(game_dir),
                     "--output", str(out),
@@ -240,7 +241,7 @@ class TestModifiersListMain(unittest.TestCase):
             game_dir = make_modifiers_game_dir(root)
             # The fixture has none of the vanilla anchors.
             with self.assertRaises(ValueError):
-                build_modifiers_list.main(
+                build_modifiers_from_research_list.main(
                     [
                         "--game-dir", str(game_dir),
                         "--output", str(root / "modifiers.txt"),
@@ -253,7 +254,7 @@ class TestModifiersListMain(unittest.TestCase):
             root = Path(d)
             game_dir = make_modifiers_game_dir(root)
             out = root / "modifiers.txt"
-            build_modifiers_list.main(
+            build_modifiers_from_research_list.main(
                 [
                     "--game-dir", str(game_dir),
                     "--output", str(out),
@@ -268,7 +269,7 @@ class TestModifiersListMain(unittest.TestCase):
             game_dir = make_modifiers_game_dir(root)
             save = root / "test.v2"
             save.write_text(MOD_SAVE, encoding="utf-8")
-            build_modifiers_list.main(
+            build_modifiers_from_research_list.main(
                 [
                     "--game-dir", str(game_dir),
                     "--output", str(root / "modifiers.txt"),
@@ -287,7 +288,7 @@ class TestModifiersListMain(unittest.TestCase):
                 encoding="utf-8",
             )
             with self.assertRaises(ValueError):
-                build_modifiers_list.main(
+                build_modifiers_from_research_list.main(
                     [
                         "--game-dir", str(game_dir),
                         "--output", str(root / "modifiers.txt"),
@@ -300,7 +301,7 @@ class TestModifiersListMain(unittest.TestCase):
     def test_missing_game_dir_raises(self):
         with tempfile.TemporaryDirectory() as d:
             with self.assertRaises(FileNotFoundError):
-                build_modifiers_list.main(
+                build_modifiers_from_research_list.main(
                     [
                         "--game-dir", str(Path(d) / "nope"),
                         "--output", str(Path(d) / "modifiers.txt"),
@@ -318,7 +319,7 @@ class TestInitialiseRouting(unittest.TestCase):
         out = StringIO()
         with redirect_stdout(out):
             initialise.main(["--list"])
-        self.assertIn("modifiers-list", out.getvalue())
+        self.assertIn("modifiers-from-research-list", out.getvalue())
         self.assertIn("inventions-map", out.getvalue())
 
     def test_output_dir_routed_per_task(self):
@@ -332,10 +333,10 @@ class TestInitialiseRouting(unittest.TestCase):
                     lambda argv: seen.setdefault("inventions", argv),
                     "inventions_map.json",
                 ),
-                "modifiers-list": (
+                "modifiers-from-research-list": (
                     "Lists.",
                     lambda argv: seen.setdefault("modifiers", argv),
-                    "modifiers_list.txt",
+                    "modifiers_from_research_list.txt",
                 ),
             },
             clear=True,
@@ -365,7 +366,7 @@ class TestInitialiseRouting(unittest.TestCase):
                         "--game-dir", "g",
                         "--check-save", "s",
                         "--source", "mymod",
-                        "--output", str(Path(d) / "modifiers_list.txt"),
+                        "--output", str(Path(d) / "modifiers_from_research_list.txt"),
                     ],
                 )
 

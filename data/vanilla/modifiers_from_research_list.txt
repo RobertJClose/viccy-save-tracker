@@ -1,4 +1,4 @@
-# Victoria II modifier list (vanilla)
+# Victoria II modifiers from research (vanilla)
 # Sources: technologies/*.txt, inventions/*/effect, common/issues.txt (economic/military reforms)
 # Counts: 150 technologies, 387 inventions, 31 reform levels
 # Names: 189

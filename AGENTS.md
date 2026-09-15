@@ -48,12 +48,12 @@ Documents\Paradox Interactive\Victoria II\
       setup\                   <- one-shot setup (run manually, not tracking):
         initialise.py            setup dispatcher (`python -m setup.initialise`)
         build_inventions_map.py  invention ID -> name mapping builder
-        build_modifiers_list.py  exhaustive modifier-name list builder
+        build_modifiers_from_research_list.py  exhaustive research-modifier list builder
         build_per_goods_matrices.py  24 per-goods matrix files builder
       data\
         vanilla\                 committed vanilla reference data (generated)
           inventions_map.json      ID -> name mapping (generated, index == ID)
-          modifiers_list.txt       exhaustive modifier names (generated)
+          modifiers_from_research_list.txt       exhaustive research modifiers (generated)
           tech_modifiers\<type>\    per-goods matrices, one dir per tech/
           invention_modifiers\<type>\  invention type or reform group,
           westernisation_modifiers\    each holding rgo_goods_modifiers.csv
@@ -244,14 +244,14 @@ If the file is missing or corrupt, the script starts with an empty set
    a sibling directory (`data/<mod>/`, which must already exist).
    `GAME_DIR` in `core/config.py` is the user-edited install root
    (`VANILLA_DATA_DIR` is the default output directory).
-- **Modifier names are a scraped catalogue, not hardcoded:** `setup/build_modifiers_list.py`
+- **Modifier names are a scraped catalogue, not hardcoded:** `setup/build_modifiers_from_research_list.py`
   collects every numeric effect name from `technologies/*.txt` (minus
   `area`/`year`/`cost`/`ai_chance`), `inventions/*/effect` only, and
   `common/issues.txt` reform levels (minus `on_execute`/`trigger`).
   Nested `block = { key = number }` effects flatten to composites
   (`artillery_defence`, `rgo_goods_output_iron`); the lone
   `rebel_org_gain = { faction = X value = N }` shape becomes
-   `rebel_org_gain_X` and any other shape fails loudly. `data/vanilla/modifiers_list.txt`
+   `rebel_org_gain_X` and any other shape fails loudly. `data/vanilla/modifiers_from_research_list.txt`
    is generated the same way as the inventions map and committed as the
    vanilla default; per-category matrix files later reuse these exact names
    as rows so every cell stays a plain number.
@@ -265,7 +265,7 @@ If the file is missing or corrupt, the script starts with an empty set
 - **Per-goods matrices record single-source values:** `setup/build_per_goods_matrices.py`
   writes 24 CSVs (`{tech,invention,westernisation}_modifiers/<group>/
   {rgo_goods,factory_goods}_modifiers.csv`): rows are the per-good composites
-  from `modifiers_list.txt` (alphabetical), columns are sources in declaration
+  from `modifiers_from_research_list.txt` (alphabetical), columns are sources in declaration
   order (bare level names for reforms), cells hold that source's own value
   (`%g`, `0.0` for no effect) — cross-source summing stays in the spreadsheet.
   Westernisation files are header-only (reforms grant no per-good bonuses).
