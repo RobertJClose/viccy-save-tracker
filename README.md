@@ -156,8 +156,11 @@ date,westernisation,old_value,new_value
 ```
 
 Replaying it in date order reconstructs the levels at any date; dates
-with no changes add no rows. Civilised nations have none of these keys,
-so their file holds just the header.
+with no changes add no rows. A civilised player (`civilized=yes`)
+tracks as no westernisation, so a fresh civilised history holds just
+the header and the westernisation date records every previously
+tracked reform disappearing. Stale reform lines kept by the game
+after westernisation are ignored.
 
 The good list is taken straight from the save, so late-game goods (for
 example `automobiles`, `aeroplanes`, `radio`) appear automatically as

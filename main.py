@@ -52,7 +52,10 @@ def parse_save(path: Path) -> tuple[str, dict[str, float], set[str], dict[str, s
     Technologies and westernisation belong to the player country (see the
     ``player=`` header); ``name={1 0.000}`` means unlocked, and
     westernisation levels (e.g. ``land_reform=no_land_reform``) are
-    recorded raw.
+    recorded raw. A civilised player (``civilized=yes``) yields no
+    westernisation — stale reform lines kept by the game after
+    westernisation are deactivated, so the next processed date records
+    their disappearance.
     """
     text = read_save(path)
 

@@ -28,8 +28,39 @@ from helpers import (
     MINIMAL_TECHS,
     MINIMAL_WESTERNISATION,
     OLDER_SAVE,
+    REPO_ROOT,
     read_csv,
 )
+
+EXAMPLE_1850_SAVE = REPO_ROOT / "example_saves" / "example_japan_1850.v2"
+
+# Same goods/techs/reforms as MINIMAL_SAVE, but the player has just
+# westernised: civilized=yes with stale reform lines still present.
+# Extraction must deactivate them (empty westernisation).
+CIVILISED_SAVE = """date="1850.2.24"
+player="JAP"
+worldmarket=
+{
+\tprice_pool=
+\t{
+\t\tcoal=2.33002
+\t\tiron=3.53003
+\t\ttropical_wood=5.43002
+\t\tmachine_parts=36.51001
+\t\tclipper_convoy=42.01001
+\t}
+}
+JAP=
+{
+\tcivilized=yes
+\ttechnology=
+\t{
+\t\tflintlock_rifles={1 0.000}
+\t}
+\tland_reform=yes_land_reform
+\tarmy_schools=no_army_schools
+}
+"""
 
 
 class TestParseSave(unittest.TestCase):
@@ -59,6 +90,19 @@ class TestParseSave(unittest.TestCase):
         self.assertEqual(len(westernisation), 15)
         self.assertEqual(westernisation["land_reform"], "no_land_reform")
         self.assertEqual(westernisation["foreign_navies"], "no_foreign_navies")
+
+    def test_parses_civilised_save_ignores_stale_reforms(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "civilised.v2"
+            p.write_text(CIVILISED_SAVE, encoding="utf-8")
+            game_date, _, techs, westernisation = main.parse_save(p)
+            self.assertEqual(game_date, "1850-02-24")
+            self.assertEqual(techs, MINIMAL_TECHS)
+            self.assertEqual(westernisation, {})
+
+    def test_parses_real_1850_example_as_deactivated(self):
+        _, _, _, westernisation = main.parse_save(EXAMPLE_1850_SAVE)
+        self.assertEqual(westernisation, {})
 
 
 class TestProcessSave(unittest.TestCase):
@@ -172,6 +216,60 @@ class TestProcessSave(unittest.TestCase):
             self.assertEqual(read_csv(output), rows_before)
             self.assertEqual(read_csv(tech_changes), tech_rows_before)
             self.assertEqual(read_csv(westernisation_changes), westernisation_rows_before)
+
+    def test_fresh_civilised_date_writes_header_only(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            save = root / "civilised.v2"
+            save.write_text(CIVILISED_SAVE, encoding="utf-8")
+            output = root / "goods.csv"
+            processed = root / "processed.json"
+            westernisation_changes = root / "westernisation_changes.csv"
+            out = io.StringIO()
+            with redirect_stdout(out):
+                result = main.process_save(
+                    save, output, processed, set()
+                )
+            self.assertTrue(result)
+            self.assertIn("0 westernisation (0 changed)", out.getvalue())
+            self.assertEqual(
+                read_csv(westernisation_changes),
+                [["date", "westernisation", "old_value", "new_value"]],
+            )
+
+    def test_westernisation_date_deactivates_tracked_reforms(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            uncivilised = root / "autosave.v2"
+            uncivilised.write_text(MINIMAL_SAVE, encoding="utf-8")
+            civilised = root / "civilised.v2"
+            civilised.write_text(CIVILISED_SAVE, encoding="utf-8")
+            output = root / "goods.csv"
+            processed = root / "processed.json"
+            westernisation_changes = root / "westernisation_changes.csv"
+            processed_dates = set()
+
+            with redirect_stdout(io.StringIO()):
+                main.process_save(uncivilised, output, processed, processed_dates)
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                result = main.process_save(
+                    civilised, output, processed, processed_dates
+                )
+
+            self.assertTrue(result)
+            self.assertIn("0 westernisation (2 changed)", out.getvalue())
+            self.assertEqual(
+                read_csv(westernisation_changes),
+                [
+                    ["date", "westernisation", "old_value", "new_value"],
+                    ["1836-01-02", "army_schools", "", "no_army_schools"],
+                    ["1836-01-02", "land_reform", "", "no_land_reform"],
+                    ["1850-02-24", "army_schools", "no_army_schools", ""],
+                    ["1850-02-24", "land_reform", "no_land_reform", ""],
+                ],
+            )
 
 
 class TestProcessExistingSaves(unittest.TestCase):

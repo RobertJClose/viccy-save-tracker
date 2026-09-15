@@ -18,7 +18,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from core import parsing
 from domains import westernisation
-from helpers import EXAMPLE_SAVE, read_csv
+from helpers import EXAMPLE_SAVE, REPO_ROOT, read_csv
+
+EXAMPLE_1845_SAVE = REPO_ROOT / "example_saves" / "example_japan_1845.v2"
+EXAMPLE_1850_SAVE = REPO_ROOT / "example_saves" / "example_japan_1850.v2"
 
 
 class TestExtractWesternisation(unittest.TestCase):
@@ -45,6 +48,34 @@ class TestExtractWesternisation(unittest.TestCase):
             {},
         )
 
+    def test_uncivilised_block_returns_levels(self):
+        block = (
+            "civilized=no\n"
+            "land_reform=yes_land_reform\n"
+            "army_schools=no_army_schools\n"
+        )
+        self.assertEqual(
+            westernisation.extract_westernisation(block),
+            {
+                "land_reform": "yes_land_reform",
+                "army_schools": "no_army_schools",
+            },
+        )
+
+    def test_civilised_block_ignores_stale_keys(self):
+        # A newly westernised nation keeps its reform lines in the
+        # save, but their effects are deactivated.
+        block = (
+            "civilized=yes\n"
+            "land_reform=yes_land_reform\n"
+            "army_schools=no_army_schools\n"
+        )
+        self.assertEqual(westernisation.extract_westernisation(block), {})
+
+    def test_civilised_match_tolerates_spacing(self):
+        block = "civilized = yes\nland_reform=yes_land_reform\n"
+        self.assertEqual(westernisation.extract_westernisation(block), {})
+
     def test_empty_block_yields_empty_dict(self):
         self.assertEqual(westernisation.extract_westernisation(""), {})
 
@@ -66,6 +97,22 @@ class TestExtractWesternisation(unittest.TestCase):
     def test_real_example_save_eng_block_is_empty(self):
         text = EXAMPLE_SAVE.read_text(encoding="utf-8", errors="replace")
         block = parsing.extract_country_block(text, "ENG")
+        self.assertEqual(westernisation.extract_westernisation(block), {})
+
+    def test_real_example_1845_jap_block_is_still_active(self):
+        text = EXAMPLE_1845_SAVE.read_text(encoding="utf-8", errors="replace")
+        block = parsing.extract_country_block(text, "JAP")
+        levels = westernisation.extract_westernisation(block)
+        self.assertEqual(len(levels), 15)
+        self.assertEqual(levels["land_reform"], "yes_land_reform")
+
+    def test_real_example_1850_jap_block_is_deactivated(self):
+        # Civilised (westernised) Japan keeps stale reform lines in
+        # the save; they must not be tracked as active.
+        text = EXAMPLE_1850_SAVE.read_text(encoding="utf-8", errors="replace")
+        block = parsing.extract_country_block(text, "JAP")
+        self.assertIn("civilized=yes", block)
+        self.assertIn("land_reform=", block)
         self.assertEqual(westernisation.extract_westernisation(block), {})
 
 
@@ -168,6 +215,41 @@ class TestWesternisationChanges(unittest.TestCase):
             )
             rows = read_csv(out)
             self.assertIn(["1836-02-01", "land_reform", "no_land_reform", ""], rows)
+            self.assertEqual(westernisation.load_westernisation_state(out), {})
+
+    def test_westernisation_date_deactivates_full_set(self):
+        # Simulates the date the player westernises: the previous
+        # state holds enacted levels, the current (civilised) state
+        # is empty, so every reform records a disappearance row.
+        previous = {
+            "land_reform": "yes_land_reform",
+            "army_schools": "no_army_schools",
+        }
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "westernisation_changes.csv"
+            westernisation.append_westernisation_changes(
+                out, "1850-02-01", {}, previous
+            )
+            changed = westernisation.append_westernisation_changes(
+                out, "1850-02-24", previous, {}
+            )
+            self.assertEqual(
+                changed,
+                {
+                    "land_reform": ("yes_land_reform", ""),
+                    "army_schools": ("no_army_schools", ""),
+                },
+            )
+            self.assertEqual(
+                read_csv(out),
+                [
+                    ["date", "westernisation", "old_value", "new_value"],
+                    ["1850-02-01", "army_schools", "", "no_army_schools"],
+                    ["1850-02-01", "land_reform", "", "yes_land_reform"],
+                    ["1850-02-24", "army_schools", "no_army_schools", ""],
+                    ["1850-02-24", "land_reform", "yes_land_reform", ""],
+                ],
+            )
             self.assertEqual(westernisation.load_westernisation_state(out), {})
 
     def test_unchanged_date_appends_nothing(self):

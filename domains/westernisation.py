@@ -10,7 +10,10 @@ in date order reconstructs the levels at any time.
 
 Only the keys in ``WESTERNISATION_KEYS`` are tracked, read from the
 player country's block. Keys absent from the block (e.g. every key for
-a civilised nation) are simply not recorded.
+a civilised nation) are simply not recorded. A newly westernised
+nation keeps stale reform lines in its block, but the game deactivates
+their effects once ``civilized=yes`` — so a civilised block always
+yields an empty dict, even when stale keys are still present.
 
 Civilised social/political reforms and government tracking are a
 separate future category and are deliberately out of scope here.
@@ -56,7 +59,21 @@ def extract_westernisation(country_block: str) -> dict[str, str]:
     skipped, so a civilised nation yields an empty dict. Values are
     recorded raw — progression ladders are discovered from the save,
     never hardcoded.
+
+    A newly westernised nation keeps its reform lines in the save, but
+    their effects are deactivated once ``civilized=yes``. Such stale
+    keys are therefore ignored: any civilised block yields an empty
+    dict. A block without a ``civilized=`` line falls back to the key
+    scan.
     """
+    civilized = re.search(
+        r"(?m)^[ \t]*civilized[ \t]*=[ \t]*(\w+)",
+        country_block,
+    )
+
+    if civilized is not None and civilized.group(1) == "yes":
+        return {}
+
     westernisation: dict[str, str] = {}
 
     for key in WESTERNISATION_KEYS:
