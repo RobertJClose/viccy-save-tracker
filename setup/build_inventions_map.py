@@ -18,9 +18,13 @@ import json
 import re
 from pathlib import Path
 
-from core.config import GAME_DIR, INVENTIONS_MAP_FILE
+from core.config import GAME_DIR, VANILLA_DATA_DIR
 
 INVENTIONS_SUBDIR = "inventions"
+
+# File name this task writes inside the output directory chosen via
+# --output (or setup.initialise --output-dir).
+OUTPUT_FILENAME = "inventions_map.json"
 
 # Invention names are word characters plus extras seen in vanilla:
 # genetics:_heredity, populism_vs._establishment, 15_inch_main_armament.
@@ -199,8 +203,8 @@ def main(argv: list[str] | None = None) -> Path:
     parser.add_argument(
         "--output",
         type=Path,
-        default=INVENTIONS_MAP_FILE,
-        help="Where to write the mapping (default: inventions_map.json).",
+        default=VANILLA_DATA_DIR / OUTPUT_FILENAME,
+        help="Where to write the mapping (default: data/vanilla/inventions_map.json).",
     )
 
     parser.add_argument(

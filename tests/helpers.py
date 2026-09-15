@@ -146,3 +146,144 @@ def make_game_dir(root: Path) -> Path:
     (inventions / "b_second.txt").write_text(INIT_FIXTURE_B, encoding="utf-8")
     (inventions / "a_first.txt").write_text(INIT_FIXTURE_A, encoding="utf-8")
     return game_dir
+
+
+# A synthetic game install for the modifier-list setup task: one tech
+# exercising scalars, per-good and unit blocks, metadata and ai_chance;
+# inventions exercising effect-only scanning (plus an effect-less one and
+# the rebel_org_gain oddball); and a minimal issues.txt with one
+# economic and one military reform group.
+MOD_TECH_FIXTURE = """#tech_group_one
+test_tech_alpha = {
+\tarea = some_area
+\tyear = 1836
+\tcost = 3600
+\tfactory_input = -0.01
+\ttax_eff = 5
+\trgo_goods_output = {
+\t\tiron = 0.25
+\t\tcoal = 0.1
+\t}
+\tartillery = {
+\t\tattack = 0.5
+\t\tdefence = 2
+\t}
+\tactivate_building = lumber_mill
+\tai_chance = {
+\t\tfactor = 2
+\t\tmodifier = {
+\t\t\tfactor = 1.5
+\t\t\tbig_producer = coal
+\t\t}
+\t}
+}
+second_tech = {
+\tarea = some_area
+\tyear = 1900
+\tcost = 7200
+}
+"""
+
+MOD_INVENTION_FIXTURE = """test_invention = {
+\tlimit = { test_tech_alpha = 1 }
+\tchance = {
+\t\tbase = 2
+\t}
+\teffect = {
+\t\tfactory_throughput = 0.05
+\t\tinfantry = {
+\t\t\tdefence = 1
+\t\t}
+\t\tfactory_goods_output = {
+\t\t\tfabric = 0.05
+\t\t}
+\t}
+}
+effectless_invention = {
+\tlimit = { test_tech_alpha = 1 }
+}
+odd_rebel = {
+\tlimit = { test_tech_alpha = 1 }
+\teffect = {
+\t\trebel_org_gain = {
+\t\t\tfaction = all
+\t\t\tvalue = -0.25
+\t\t}
+\t}
+}
+"""
+
+MOD_ISSUES_FIXTURE = """economic_reforms = {
+\tland_reform = {
+\t\tno_land_reform = {
+\t\t\tglobal_pop_militancy_modifier = -0.005
+\t\t}
+\t\tyes_land_reform = {
+\t\t\tfarm_rgo_eff = 0.25
+\t\t\ttechnology_cost = 8000
+\t\t\ton_execute = {
+\t\t\t\teffect = {
+\t\t\t\t\tany_pop = {
+\t\t\t\t\t\tmilitancy = 1
+\t\t\t\t\t}
+\t\t\t\t}
+\t\t\t}
+\t\t}
+\t}
+}
+military_reforms = {
+\tarmy_schools = {
+\t\tno_army_schools = {
+\t\t\tglobal_pop_militancy_modifier = -0.005
+\t\t}
+\t}
+}
+"""
+
+MOD_EXPECTED_NAMES = {
+    "factory_input",
+    "tax_eff",
+    "rgo_goods_output_iron",
+    "rgo_goods_output_coal",
+    "artillery_attack",
+    "artillery_defence",
+    "factory_throughput",
+    "infantry_defence",
+    "factory_goods_output_fabric",
+    "rebel_org_gain_all",
+    "global_pop_militancy_modifier",
+    "farm_rgo_eff",
+    "technology_cost",
+}
+
+# A synthetic save whose techs and reform levels all exist in the
+# MOD_* fixtures above.
+MOD_SAVE = """date="1836.1.2"
+player="TST"
+TST=
+{
+\ttechnology=
+\t{
+\t\ttest_tech_alpha={1 0.000}
+\t}
+\tland_reform=yes_land_reform
+\tarmy_schools=no_army_schools
+}
+"""
+
+
+def make_modifiers_game_dir(root: Path) -> Path:
+    game_dir = root / "game"
+    (game_dir / "technologies").mkdir(parents=True)
+    (game_dir / "inventions").mkdir(parents=True)
+    (game_dir / "common").mkdir(parents=True)
+    (game_dir / "technologies" / "t_tech.txt").write_text(
+        MOD_TECH_FIXTURE, encoding="utf-8"
+    )
+    (game_dir / "inventions" / "i_inv.txt").write_text(
+        MOD_INVENTION_FIXTURE, encoding="utf-8"
+    )
+    (game_dir / "common" / "issues.txt").write_text(
+        MOD_ISSUES_FIXTURE, encoding="utf-8"
+    )
+    return game_dir

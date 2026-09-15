@@ -48,8 +48,11 @@ Documents\Paradox Interactive\Victoria II\
       setup\                   <- one-shot setup (run manually, not tracking):
         initialise.py            setup dispatcher (`python -m setup.initialise`)
         build_inventions_map.py  invention ID -> name mapping builder
+        build_modifiers_list.py  exhaustive modifier-name list builder
       data\
-        inventions_map.json      committed vanilla mapping (generated, index == ID)
+        vanilla\                 committed vanilla reference data (generated)
+          inventions_map.json      ID -> name mapping (generated, index == ID)
+          modifiers_list.txt       exhaustive modifier names (generated)
       example_saves\
         example_japan_1836.v2  <- example save for agents to inspect
         example_japan_1845.v2
@@ -227,11 +230,31 @@ If the file is missing or corrupt, the script starts with an empty set
   inventions take no ID) and skips nested blocks, so nested
   `invention = <name>` cross-references are never collected. Names may
   contain `:`, `.` and leading digits (`genetics:_heredity`,
-  `15_inch_main_armament`). `data/inventions_map.json` is generated once via
-  `python -m setup.initialise --check-save example_saves/example_japan_1836.v2` (validates count ==
-  max save ID plus anchor IDs) and committed as the vanilla default; a
-  modded install re-runs with `--game-dir`/`--output`. `GAME_DIR` in
-  `core/config.py` is the user-edited install root.
+   `15_inch_main_armament`). `data/vanilla/inventions_map.json` is generated via
+   `python -m setup.initialise --check-save example_saves/example_japan_1836.v2` (validates count ==
+   max save ID plus anchor IDs) and committed as the vanilla default; a
+   modded install re-runs with `--game-dir`/`--output-dir`/`--source` into
+   a sibling directory (`data/<mod>/`, which must already exist).
+   `GAME_DIR` in `core/config.py` is the user-edited install root
+   (`VANILLA_DATA_DIR` is the default output directory).
+- **Modifier names are a scraped catalogue, not hardcoded:** `setup/build_modifiers_list.py`
+  collects every numeric effect name from `technologies/*.txt` (minus
+  `area`/`year`/`cost`/`ai_chance`), `inventions/*/effect` only, and
+  `common/issues.txt` reform levels (minus `on_execute`/`trigger`).
+  Nested `block = { key = number }` effects flatten to composites
+  (`artillery_defence`, `rgo_goods_output_iron`); the lone
+  `rebel_org_gain = { faction = X value = N }` shape becomes
+   `rebel_org_gain_X` and any other shape fails loudly. `data/vanilla/modifiers_list.txt`
+   is generated the same way as the inventions map and committed as the
+   vanilla default; per-category matrix files later reuse these exact names
+   as rows so every cell stays a plain number.
+- **One setup output directory, not per-task flags:** `setup/initialise.py`
+  takes a single `--output-dir` (default `VANILLA_DATA_DIR`) plus `--source`
+  and forwards `--output <dir>/<task-filename>` to every registered task,
+  so one run regenerates a whole variant (`data/vanilla/` or `data/<mod>/`).
+  Each build module owns its `OUTPUT_FILENAME` and keeps a standalone
+  `--output <file>` for direct runs. Like tracking output dirs, the setup
+  output dir must already exist.
 - **Stdlib only:** The script uses no third-party packages.
 - **Encoding:** Save files are read as UTF-8 with `errors='replace'`
   (one bad byte must not abort the whole file).
@@ -250,3 +273,6 @@ If the file is missing or corrupt, the script starts with an empty set
   specific `.v2` save file(s) to record (plain file names in the save
   directory, no paths). Correctness is the user's
   responsibility; the script intentionally does not guess.
+
+## Modded game support
+For the record, this repo's original author exclusively plays vanilla, and they am not trying to guarantee that this repo is mod compatible at all stages of development. With that said, if things *could* be implemented in a mod-friendly manner then that it certainly a benefit. Full mod support may become a later feature.

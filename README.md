@@ -32,13 +32,29 @@ import into LibreOffice Calc.
     .venv\Scripts\activate
     ```
 
-3. (One-off) build the invention ID → name mapping from your game
+3. (One-off) build the reference data from your game
    install (already committed for vanilla; re-run only for modded
    installs):
 
-   ```bash
+    ```bash
     # Edit GAME_DIR in core/config.py first, or pass --game-dir explicitly.
      python -m setup.initialise --check-save example_saves/example_japan_1836.v2
+    ```
+
+    This builds both the invention ID → name mapping
+    (`data/vanilla/inventions_map.json`) and the exhaustive
+    modifier-name list (`data/vanilla/modifiers_list.txt`, every numeric
+    tech/invention/reform effect, e.g. `factory_input`,
+    `artillery_defence`, `rgo_goods_output_iron`).
+
+    Reference data lives in one directory per game variant
+    (`data/vanilla/`; modded installs generate `data/<mod>/` siblings).
+    Like the tracking output directories, the directory must already
+    exist — create it first, then point the run at it:
+
+    ```bash
+    mkdir data\my_mod
+     python -m setup.initialise --game-dir <modded-install> --output-dir data\my_mod --source my_mod
     ```
 
     `python -m setup.initialise --list` shows the available setup tasks.
@@ -183,8 +199,12 @@ save games\
     setup\
       initialise.py
       build_inventions_map.py
+      build_modifiers_list.py
     data\
-      inventions_map.json
+      vanilla\                    <- committed vanilla reference data
+        inventions_map.json
+        modifiers_list.txt
+      <mod>\                     <- per-mod reference data (generated, not committed)
     example_saves\
       example_japan_1836.v2
       example_japan_1845.v2
