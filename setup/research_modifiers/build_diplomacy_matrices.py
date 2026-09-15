@@ -1,7 +1,7 @@
-"""One-shot initialisation: build the economic modifier matrices.
+"""One-shot initialisation: build the diplomacy modifier matrices.
 
-One ``economic_modifiers.csv`` per group directory (alongside the
-per-goods matrices): rows are the nineteen agreed economic names,
+One ``diplomacy_modifiers.csv`` per group directory (alongside the
+per-goods matrices): rows are the three agreed diplomacy names,
 columns are sources in declaration order, cells hold that source's
 own value (``0.0`` for no effect).
 """
@@ -12,7 +12,7 @@ import argparse
 from pathlib import Path
 
 from core.config import GAME_DIR, VANILLA_DATA_DIR
-from setup.build_per_goods_matrices import (
+from setup.research_modifiers.build_per_goods_matrices import (
     check_rows_covered,
     check_value_anchors,
     collect_invention_values,
@@ -23,55 +23,32 @@ from setup.build_per_goods_matrices import (
     write_category_tree,
 )
 
-FILENAME = "economic_modifiers.csv"
+FILENAME = "diplomacy_modifiers.csv"
 
 ROWS = (
-    "administrative_efficiency",
-    "administrative_efficiency_modifier",
-    "factory_cost",
-    "factory_input",
-    "factory_output",
-    "factory_throughput",
-    "farm_RGO_eff",
-    "farm_rgo_eff",
-    "farm_rgo_size",
-    "loan_interest",
-    "max_loan_modifier",
-    "max_railroad",
-    "mine_RGO_eff",
-    "mine_rgo_eff",
-    "mine_rgo_size",
-    "rgo_output",
-    "tariff_efficiency_modifier",
-    "tax_eff",
-    "tax_efficiency",
+    "cb_creation_speed",
+    "diplomatic_points",
+    "influence",
 )
 
 # Anchor predictions for the vanilla files: (kind, group, source, row)
 # must hold the predicted value. Checked only for source == "vanilla".
 ANCHORS = (
-    ("technology", "commerce", "private_banks", "tax_eff", 3),
+    ("technology", "commerce", "freedom_of_trade", "influence", 0.1),
+    ("technology", "culture", "nationalism_n_imperialism", "cb_creation_speed", 0.1),
     (
         "technology",
-        "commerce",
-        "early_classical_theory_and_critique",
-        "factory_input",
-        -0.01,
-    ),
-    ("invention", "industry", "direct_current", "rgo_output", 0.05),
-    (
-        "invention",
-        "commerce",
-        "multitude_of_financial_instruments",
-        "tax_eff",
-        1,
+        "culture",
+        "revolution_n_counterrevolution",
+        "diplomatic_points",
+        0.25,
     ),
 )
 
 
 def main(argv: list[str] | None = None) -> Path:
     parser = argparse.ArgumentParser(
-        description="Build the economic modifier matrices.",
+        description="Build the diplomacy modifier matrices.",
     )
 
     parser.add_argument(
@@ -145,7 +122,7 @@ def main(argv: list[str] | None = None) -> Path:
         invention_groups,
         reform_groups,
     )
-    print(f"Wrote {len(written)} economic matrices to {args.output_dir}")
+    print(f"Wrote {len(written)} diplomacy matrices to {args.output_dir}")
 
     return args.output_dir
 

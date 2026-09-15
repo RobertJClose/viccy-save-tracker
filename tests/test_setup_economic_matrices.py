@@ -1,5 +1,5 @@
 """
-Tests for the economic matrices setup (setup/build_economic_matrices.py).
+Tests for the economic matrices setup (setup/research_modifiers/build_economic_matrices.py).
 
 Run from the repository root:
 
@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from setup import build_economic_matrices
+from setup.research_modifiers import build_economic_matrices
 from helpers import RES_SAVE, make_research_economic_game_dir
 
 

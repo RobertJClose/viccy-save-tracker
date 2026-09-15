@@ -24,22 +24,42 @@ from setup.build_inventions_map import (
     OUTPUT_FILENAME as INVENTIONS_OUTPUT_FILENAME,
 )
 from setup.build_inventions_map import main as build_inventions_map_main
-from setup.build_modifiers_from_research_list import (
+from setup.research_modifiers.build_modifiers_from_research_list import (
     OUTPUT_FILENAME as MODIFIERS_OUTPUT_FILENAME,
 )
-from setup.build_modifiers_from_research_list import (
+from setup.research_modifiers.build_modifiers_from_research_list import (
     main as build_modifiers_from_research_main,
 )
-from setup.build_per_goods_matrices import main as build_per_goods_matrices_main
-from setup.build_colonial_matrices import main as build_colonial_matrices_main
-from setup.build_prestige_matrices import main as build_prestige_matrices_main
-from setup.build_population_matrices import main as build_population_matrices_main
-from setup.build_diplomacy_matrices import main as build_diplomacy_matrices_main
-from setup.build_other_matrices import main as build_other_matrices_main
-from setup.build_research_matrices import main as build_research_matrices_main
-from setup.build_economic_matrices import main as build_economic_matrices_main
-from setup.build_per_unit_matrices import main as build_per_unit_matrices_main
-from setup.build_military_matrices import main as build_military_matrices_main
+from setup.research_modifiers.build_per_goods_matrices import (
+    main as build_per_goods_matrices_main,
+)
+from setup.research_modifiers.build_colonial_matrices import (
+    main as build_colonial_matrices_main,
+)
+from setup.research_modifiers.build_prestige_matrices import (
+    main as build_prestige_matrices_main,
+)
+from setup.research_modifiers.build_population_matrices import (
+    main as build_population_matrices_main,
+)
+from setup.research_modifiers.build_diplomacy_matrices import (
+    main as build_diplomacy_matrices_main,
+)
+from setup.research_modifiers.build_other_matrices import (
+    main as build_other_matrices_main,
+)
+from setup.research_modifiers.build_research_matrices import (
+    main as build_research_matrices_main,
+)
+from setup.research_modifiers.build_economic_matrices import (
+    main as build_economic_matrices_main,
+)
+from setup.research_modifiers.build_per_unit_matrices import (
+    main as build_per_unit_matrices_main,
+)
+from setup.research_modifiers.build_military_matrices import (
+    main as build_military_matrices_main,
+)
 
 TASKS = {
     "inventions-map": (

@@ -1,9 +1,10 @@
-"""One-shot initialisation: build the prestige modifier matrices.
+"""One-shot initialisation: build the other-modifier matrices.
 
-One ``prestige_modifiers.csv`` per group directory (alongside the
-per-goods matrices): rows are the three agreed prestige names,
-columns are sources in declaration order, cells hold that source's
-own value (``0.0`` for no effect).
+One ``other_modifiers.csv`` per group directory (alongside the
+per-goods matrices): rows are the leftover names that fit no agreed
+category (today just ``unit``, a cosmetic map-sprite flag kept
+verbatim). Columns are sources in declaration order, cells hold that
+source's own value (``0.0`` for no effect).
 """
 
 from __future__ import annotations
@@ -12,7 +13,7 @@ import argparse
 from pathlib import Path
 
 from core.config import GAME_DIR, VANILLA_DATA_DIR
-from setup.build_per_goods_matrices import (
+from setup.research_modifiers.build_per_goods_matrices import (
     check_rows_covered,
     check_value_anchors,
     collect_invention_values,
@@ -23,26 +24,22 @@ from setup.build_per_goods_matrices import (
     write_category_tree,
 )
 
-FILENAME = "prestige_modifiers.csv"
+FILENAME = "other_modifiers.csv"
 
 ROWS = (
-    "permanent_prestige",
-    "prestige",
-    "shared_prestige",
+    "unit",
 )
 
 # Anchor predictions for the vanilla files: (kind, group, source, row)
 # must hold the predicted value. Checked only for source == "vanilla".
 ANCHORS = (
-    ("technology", "culture", "classicism_n_early_romanticism", "prestige", 0.05),
-    ("invention", "commerce", "john_elliot_cairnes", "permanent_prestige", 1),
-    ("invention", "culture", "romanticist_literature", "shared_prestige", 5),
+    ("technology", "army", "bolt_action_rifles", "unit", 1),
 )
 
 
 def main(argv: list[str] | None = None) -> Path:
     parser = argparse.ArgumentParser(
-        description="Build the prestige modifier matrices.",
+        description="Build the other-modifier matrices.",
     )
 
     parser.add_argument(
@@ -116,7 +113,7 @@ def main(argv: list[str] | None = None) -> Path:
         invention_groups,
         reform_groups,
     )
-    print(f"Wrote {len(written)} prestige matrices to {args.output_dir}")
+    print(f"Wrote {len(written)} other matrices to {args.output_dir}")
 
     return args.output_dir
 

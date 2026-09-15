@@ -1,7 +1,7 @@
-"""One-shot initialisation: build the colonial modifier matrices.
+"""One-shot initialisation: build the economic modifier matrices.
 
-One ``colonial_modifiers.csv`` per group directory (alongside the
-per-goods matrices): rows are the four agreed colonial names,
+One ``economic_modifiers.csv`` per group directory (alongside the
+per-goods matrices): rows are the nineteen agreed economic names,
 columns are sources in declaration order, cells hold that source's
 own value (``0.0`` for no effect).
 """
@@ -12,7 +12,7 @@ import argparse
 from pathlib import Path
 
 from core.config import GAME_DIR, VANILLA_DATA_DIR
-from setup.build_per_goods_matrices import (
+from setup.research_modifiers.build_per_goods_matrices import (
     check_rows_covered,
     check_value_anchors,
     collect_invention_values,
@@ -23,28 +23,55 @@ from setup.build_per_goods_matrices import (
     write_category_tree,
 )
 
-FILENAME = "colonial_modifiers.csv"
+FILENAME = "economic_modifiers.csv"
 
 ROWS = (
-    "colonial_life_rating",
-    "colonial_migration",
-    "colonial_points",
-    "colonial_prestige",
+    "administrative_efficiency",
+    "administrative_efficiency_modifier",
+    "factory_cost",
+    "factory_input",
+    "factory_output",
+    "factory_throughput",
+    "farm_RGO_eff",
+    "farm_rgo_eff",
+    "farm_rgo_size",
+    "loan_interest",
+    "max_loan_modifier",
+    "max_railroad",
+    "mine_RGO_eff",
+    "mine_rgo_eff",
+    "mine_rgo_size",
+    "rgo_output",
+    "tariff_efficiency_modifier",
+    "tax_eff",
+    "tax_efficiency",
 )
 
 # Anchor predictions for the vanilla files: (kind, group, source, row)
 # must hold the predicted value. Checked only for source == "vanilla".
 ANCHORS = (
-    ("technology", "navy", "post_nelsonian_thought", "colonial_points", 100),
-    ("invention", "army", "colonial_negotiations", "colonial_life_rating", -10),
-    ("technology", "culture", "malthusian_thought", "colonial_migration", 0.05),
-    ("invention", "culture", "social_anthropology", "colonial_prestige", 0.1),
+    ("technology", "commerce", "private_banks", "tax_eff", 3),
+    (
+        "technology",
+        "commerce",
+        "early_classical_theory_and_critique",
+        "factory_input",
+        -0.01,
+    ),
+    ("invention", "industry", "direct_current", "rgo_output", 0.05),
+    (
+        "invention",
+        "commerce",
+        "multitude_of_financial_instruments",
+        "tax_eff",
+        1,
+    ),
 )
 
 
 def main(argv: list[str] | None = None) -> Path:
     parser = argparse.ArgumentParser(
-        description="Build the colonial modifier matrices.",
+        description="Build the economic modifier matrices.",
     )
 
     parser.add_argument(
@@ -118,7 +145,7 @@ def main(argv: list[str] | None = None) -> Path:
         invention_groups,
         reform_groups,
     )
-    print(f"Wrote {len(written)} colonial matrices to {args.output_dir}")
+    print(f"Wrote {len(written)} economic matrices to {args.output_dir}")
 
     return args.output_dir
 

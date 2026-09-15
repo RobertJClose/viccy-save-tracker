@@ -1,7 +1,7 @@
-"""One-shot initialisation: build the diplomacy modifier matrices.
+"""One-shot initialisation: build the population modifier matrices.
 
-One ``diplomacy_modifiers.csv`` per group directory (alongside the
-per-goods matrices): rows are the three agreed diplomacy names,
+One ``population_modifiers.csv`` per group directory (alongside the
+per-goods matrices): rows are the two agreed population names,
 columns are sources in declaration order, cells hold that source's
 own value (``0.0`` for no effect).
 """
@@ -12,7 +12,7 @@ import argparse
 from pathlib import Path
 
 from core.config import GAME_DIR, VANILLA_DATA_DIR
-from setup.build_per_goods_matrices import (
+from setup.research_modifiers.build_per_goods_matrices import (
     check_rows_covered,
     check_value_anchors,
     collect_invention_values,
@@ -23,32 +23,37 @@ from setup.build_per_goods_matrices import (
     write_category_tree,
 )
 
-FILENAME = "diplomacy_modifiers.csv"
+FILENAME = "population_modifiers.csv"
 
 ROWS = (
-    "cb_creation_speed",
-    "diplomatic_points",
-    "influence",
+    "max_national_focus",
+    "pop_growth",
 )
 
 # Anchor predictions for the vanilla files: (kind, group, source, row)
 # must hold the predicted value. Checked only for source == "vanilla".
 ANCHORS = (
-    ("technology", "commerce", "freedom_of_trade", "influence", 0.1),
-    ("technology", "culture", "nationalism_n_imperialism", "cb_creation_speed", 0.1),
+    ("technology", "culture", "enlightenment_thought", "max_national_focus", 1),
     (
-        "technology",
+        "invention",
         "culture",
-        "revolution_n_counterrevolution",
-        "diplomatic_points",
-        0.25,
+        "the_revolt_of_the_masses",
+        "plurality",
+        0.10,
+    ),
+    (
+        "invention",
+        "industry",
+        "aerial_bacteria_and_antiseptic_principle",
+        "pop_growth",
+        0.0002,
     ),
 )
 
 
 def main(argv: list[str] | None = None) -> Path:
     parser = argparse.ArgumentParser(
-        description="Build the diplomacy modifier matrices.",
+        description="Build the population modifier matrices.",
     )
 
     parser.add_argument(
@@ -122,7 +127,7 @@ def main(argv: list[str] | None = None) -> Path:
         invention_groups,
         reform_groups,
     )
-    print(f"Wrote {len(written)} diplomacy matrices to {args.output_dir}")
+    print(f"Wrote {len(written)} population matrices to {args.output_dir}")
 
     return args.output_dir
 

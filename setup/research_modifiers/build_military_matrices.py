@@ -1,10 +1,10 @@
-"""One-shot initialisation: build the other-modifier matrices.
+"""One-shot initialisation: build the military modifier matrices.
 
-One ``other_modifiers.csv`` per group directory (alongside the
-per-goods matrices): rows are the leftover names that fit no agreed
-category (today just ``unit``, a cosmetic map-sprite flag kept
-verbatim). Columns are sources in declaration order, cells hold that
-source's own value (``0.0`` for no effect).
+One ``military_modifiers.csv`` per group directory (alongside the
+per-goods matrices): rows are the 32 agreed military names (country-
+level forces stats plus the army/navy-base composites), columns are
+sources in declaration order, cells hold that source's own value
+(``0.0`` for no effect).
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ import argparse
 from pathlib import Path
 
 from core.config import GAME_DIR, VANILLA_DATA_DIR
-from setup.build_per_goods_matrices import (
+from setup.research_modifiers.build_per_goods_matrices import (
     check_rows_covered,
     check_value_anchors,
     collect_invention_values,
@@ -24,22 +24,62 @@ from setup.build_per_goods_matrices import (
     write_category_tree,
 )
 
-FILENAME = "other_modifiers.csv"
+FILENAME = "military_modifiers.csv"
 
 ROWS = (
-    "unit",
+    "army_base_default_organisation",
+    "army_base_maximum_speed",
+    "army_base_supply_consumption",
+    "combat_width",
+    "dig_in_cap",
+    "land_attrition",
+    "land_defense_modifier",
+    "land_organisation",
+    "land_unit_start_experience",
+    "leadership_modifier",
+    "max_fort",
+    "max_naval_base",
+    "military_tactics",
+    "mobilisation_economy_impact",
+    "mobilisation_size",
+    "morale",
+    "naval_attack_modifier",
+    "naval_attrition",
+    "naval_defense_modifier",
+    "naval_unit_start_experience",
+    "navy_base_build_time",
+    "navy_base_default_organisation",
+    "navy_base_gun_power",
+    "navy_base_hull",
+    "navy_base_maximum_speed",
+    "regular_experience_level",
+    "reinforce_rate",
+    "research_points_on_conquer",
+    "soldier_to_pop_loss",
+    "supply_limit",
+    "supply_range",
+    "war_exhaustion",
 )
 
 # Anchor predictions for the vanilla files: (kind, group, source, row)
 # must hold the predicted value. Checked only for source == "vanilla".
 ANCHORS = (
-    ("technology", "army", "bolt_action_rifles", "unit", 1),
+    ("technology", "army", "army_command_principle", "morale", 0.25),
+    ("technology", "army", "army_command_principle", "military_tactics", 0.25),
+    ("technology", "culture", "introspectionism", "reinforce_rate", 0.05),
+    (
+        "invention",
+        "navy",
+        "speedy_maneuvering_tactic",
+        "navy_base_maximum_speed",
+        1,
+    ),
 )
 
 
 def main(argv: list[str] | None = None) -> Path:
     parser = argparse.ArgumentParser(
-        description="Build the other-modifier matrices.",
+        description="Build the military modifier matrices.",
     )
 
     parser.add_argument(
@@ -113,7 +153,7 @@ def main(argv: list[str] | None = None) -> Path:
         invention_groups,
         reform_groups,
     )
-    print(f"Wrote {len(written)} other matrices to {args.output_dir}")
+    print(f"Wrote {len(written)} military matrices to {args.output_dir}")
 
     return args.output_dir
 

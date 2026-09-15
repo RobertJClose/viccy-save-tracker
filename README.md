@@ -205,12 +205,13 @@ save games\
     setup\
       initialise.py
       build_inventions_map.py
-      build_modifiers_from_research_list.py
-      build_per_goods_matrices.py
-      build_per_unit_matrices.py
-      build_{colonial,prestige,population,diplomacy,other}_matrices.py
-      build_{research,economic}_matrices.py
-      build_military_matrices.py
+      research_modifiers\        player bonuses from in-game research:
+        build_modifiers_from_research_list.py
+        build_per_goods_matrices.py
+        build_per_unit_matrices.py
+        build_{colonial,prestige,population,diplomacy,other}_matrices.py
+        build_{research,economic}_matrices.py
+        build_military_matrices.py
     data\
       vanilla\                    <- committed vanilla reference data
         inventions_map.json

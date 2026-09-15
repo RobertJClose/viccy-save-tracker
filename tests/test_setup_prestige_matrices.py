@@ -1,5 +1,5 @@
 """
-Tests for the prestige matrices setup (setup/build_prestige_matrices.py).
+Tests for the prestige matrices setup (setup/research_modifiers/build_prestige_matrices.py).
 
 Run from the repository root:
 
@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from setup import build_prestige_matrices
+from setup.research_modifiers import build_prestige_matrices
 from helpers import CAT_SAVE, make_category_game_dir
 
 

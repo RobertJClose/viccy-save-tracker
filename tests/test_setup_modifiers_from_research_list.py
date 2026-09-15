@@ -1,6 +1,6 @@
 """
 Tests for the exhaustive research-modifier list setup
-(setup/build_modifiers_from_research_list.py).
+(setup/research_modifiers/build_modifiers_from_research_list.py).
 
 Run from the repository root:
 
@@ -16,7 +16,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from setup import build_modifiers_from_research_list
+from setup.research_modifiers import build_modifiers_from_research_list
 from setup import initialise
 from helpers import (
     MOD_EXPECTED_NAMES,

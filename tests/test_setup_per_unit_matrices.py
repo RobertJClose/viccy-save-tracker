@@ -1,5 +1,5 @@
 """
-Tests for the per-unit matrices setup (setup/build_per_unit_matrices.py).
+Tests for the per-unit matrices setup (setup/research_modifiers/build_per_unit_matrices.py).
 
 Run from the repository root:
 
@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from setup import build_per_unit_matrices
+from setup.research_modifiers import build_per_unit_matrices
 from helpers import PU_SAVE, make_per_unit_game_dir
 
 

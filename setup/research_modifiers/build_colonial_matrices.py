@@ -1,7 +1,7 @@
-"""One-shot initialisation: build the population modifier matrices.
+"""One-shot initialisation: build the colonial modifier matrices.
 
-One ``population_modifiers.csv`` per group directory (alongside the
-per-goods matrices): rows are the two agreed population names,
+One ``colonial_modifiers.csv`` per group directory (alongside the
+per-goods matrices): rows are the four agreed colonial names,
 columns are sources in declaration order, cells hold that source's
 own value (``0.0`` for no effect).
 """
@@ -12,7 +12,7 @@ import argparse
 from pathlib import Path
 
 from core.config import GAME_DIR, VANILLA_DATA_DIR
-from setup.build_per_goods_matrices import (
+from setup.research_modifiers.build_per_goods_matrices import (
     check_rows_covered,
     check_value_anchors,
     collect_invention_values,
@@ -23,37 +23,28 @@ from setup.build_per_goods_matrices import (
     write_category_tree,
 )
 
-FILENAME = "population_modifiers.csv"
+FILENAME = "colonial_modifiers.csv"
 
 ROWS = (
-    "max_national_focus",
-    "pop_growth",
+    "colonial_life_rating",
+    "colonial_migration",
+    "colonial_points",
+    "colonial_prestige",
 )
 
 # Anchor predictions for the vanilla files: (kind, group, source, row)
 # must hold the predicted value. Checked only for source == "vanilla".
 ANCHORS = (
-    ("technology", "culture", "enlightenment_thought", "max_national_focus", 1),
-    (
-        "invention",
-        "culture",
-        "the_revolt_of_the_masses",
-        "plurality",
-        0.10,
-    ),
-    (
-        "invention",
-        "industry",
-        "aerial_bacteria_and_antiseptic_principle",
-        "pop_growth",
-        0.0002,
-    ),
+    ("technology", "navy", "post_nelsonian_thought", "colonial_points", 100),
+    ("invention", "army", "colonial_negotiations", "colonial_life_rating", -10),
+    ("technology", "culture", "malthusian_thought", "colonial_migration", 0.05),
+    ("invention", "culture", "social_anthropology", "colonial_prestige", 0.1),
 )
 
 
 def main(argv: list[str] | None = None) -> Path:
     parser = argparse.ArgumentParser(
-        description="Build the population modifier matrices.",
+        description="Build the colonial modifier matrices.",
     )
 
     parser.add_argument(
@@ -127,7 +118,7 @@ def main(argv: list[str] | None = None) -> Path:
         invention_groups,
         reform_groups,
     )
-    print(f"Wrote {len(written)} population matrices to {args.output_dir}")
+    print(f"Wrote {len(written)} colonial matrices to {args.output_dir}")
 
     return args.output_dir
 

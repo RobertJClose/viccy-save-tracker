@@ -9,7 +9,7 @@ names (``rgo_goods_output_iron``), columns are sources, cells are plain
 numbers with ``0.0`` for no effect.
 
 Scope rules mirror the exhaustive list (see
-``setup/build_modifiers_from_research_list.py``): technologies minus
+``setup/research_modifiers/build_modifiers_from_research_list.py``): technologies minus
 ``area``/``year``/``cost``/``ai_chance``, inventions' ``effect`` only,
 reform levels minus ``on_execute``/``trigger``. Only the four per-good
 block families are collected here; every other modifier is out of scope
@@ -27,7 +27,7 @@ from core.parsing import extract_braced_content, extract_country_block, extract_
 from domains.technologies import extract_technologies
 from domains.westernisation import WESTERNISATION_KEYS, extract_westernisation
 from setup.build_inventions_map import strip_comments
-from setup.build_modifiers_from_research_list import (
+from setup.research_modifiers.build_modifiers_from_research_list import (
     INVENTIONS_SUBDIR,
     ISSUES_PATH,
     REFORM_GROUPS,

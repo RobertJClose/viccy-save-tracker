@@ -48,14 +48,15 @@ Documents\Paradox Interactive\Victoria II\
       setup\                   <- one-shot setup (run manually, not tracking):
         initialise.py            setup dispatcher (`python -m setup.initialise`)
         build_inventions_map.py  invention ID -> name mapping builder
-        build_modifiers_from_research_list.py  exhaustive research-modifier list builder
-        build_per_goods_matrices.py  24 per-goods matrix files builder
-        build_per_unit_matrices.py  24 per-unit matrix files builder
-                                 (per_unit_land/naval split)
-        build_{colonial,prestige,population,diplomacy,other}_matrices.py
-                                 one small-category matrix task each
-        build_{research,economic}_matrices.py
-        build_military_matrices.py  military category matrix task
+        research_modifiers\        player bonuses from in-game research:
+          build_modifiers_from_research_list.py  exhaustive research-modifier list builder
+          build_per_goods_matrices.py  24 per-goods matrix files builder
+          build_per_unit_matrices.py  24 per-unit matrix files builder
+                                   (per_unit_land/naval split)
+          build_{colonial,prestige,population,diplomacy,other}_matrices.py
+                                   one small-category matrix task each
+          build_{research,economic}_matrices.py
+          build_military_matrices.py  military category matrix task
       data\
         vanilla\                 committed vanilla reference data (generated)
           inventions_map.json      ID -> name mapping (generated, index == ID)
@@ -260,7 +261,7 @@ If the file is missing or corrupt, the script starts with an empty set
    a sibling directory (`data/<mod>/`, which must already exist).
    `GAME_DIR` in `core/config.py` is the user-edited install root
    (`VANILLA_DATA_DIR` is the default output directory).
-- **Modifier names are a scraped catalogue, not hardcoded:** `setup/build_modifiers_from_research_list.py`
+- **Modifier names are a scraped catalogue, not hardcoded:** `setup/research_modifiers/build_modifiers_from_research_list.py`
   collects every numeric effect name from `technologies/*.txt` (minus
   `area`/`year`/`cost`/`ai_chance`), `inventions/*/effect` only, and
   `common/issues.txt` reform levels (minus `on_execute`/`trigger`).
@@ -278,7 +279,13 @@ If the file is missing or corrupt, the script starts with an empty set
   Each build module owns its `OUTPUT_FILENAME` and keeps a standalone
   `--output <file>` for direct runs. Like tracking output dirs, the setup
   output dir must already exist.
-- **Per-goods matrices record single-source values:** `setup/build_per_goods_matrices.py`
+- **Research-bonus builders live in their own subpackage:** everything
+  deriving player bonuses from in-game research sits under
+  `setup/research_modifiers/` (the exhaustive list plus one matrix task
+  per category); unrelated setup work (e.g. `build_inventions_map.py`)
+  stays directly under `setup/`. A new bonus family means a new module
+  in the subpackage, not a new top-level file.
+- **Per-goods matrices record single-source values:** `setup/research_modifiers/build_per_goods_matrices.py`
   writes 24 CSVs (`{tech,invention,westernisation}_modifiers/<group>/
   {rgo_goods,factory_goods}_modifiers.csv`): rows are the per-good composites
   from `modifiers_from_research_list.txt` (alphabetical), columns are sources in declaration
@@ -291,15 +298,15 @@ If the file is missing or corrupt, the script starts with an empty set
    instead of `--output <file>`).
 - **Small categories mirror per-goods, one script each:** colonial, prestige,
   population, diplomacy, other, research, economic and military each own a
-  `setup/build_<category>_matrices.py`
+  `setup/research_modifiers/build_<category>_matrices.py`
   task writing `<category>_modifiers.csv` into the same 12 group directories
   (no new top-level dirs, no monolith module). Rows are the agreed exact name
   sets (verbatim, twins and `seperatism` included); everything mechanical
   (value collectors, `format_number`, exact-matrix rendering, anchor/coverage
   checks, `--check-save` column validation) is imported from
-  `setup/build_per_goods_matrices.py`. Any future category follows the
+  `setup/research_modifiers/build_per_goods_matrices.py`. Any future category follows the
   same template; per-unit is a 24-file variant (see next).
-- **Per-unit mirrors per-goods with a land/naval split:** `setup/build_per_unit_matrices.py`
+- **Per-unit mirrors per-goods with a land/naval split:** `setup/research_modifiers/build_per_unit_matrices.py`
   writes 24 CSVs (`{tech,invention,westernisation}_modifiers/<group>/
   per_unit_{land,naval}_modifiers.csv`): rows are the unit-scope composites
   whose scope is a land unit (air counts as land) or a naval unit,
