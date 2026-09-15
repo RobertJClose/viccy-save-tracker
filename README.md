@@ -41,11 +41,14 @@ import into LibreOffice Calc.
      python -m setup.initialise --check-save example_saves/example_japan_1836.v2
     ```
 
-    This builds both the invention ID → name mapping
-    (`data/vanilla/inventions_map.json`) and the exhaustive
+    This builds the invention ID → name mapping
+    (`data/vanilla/inventions_map.json`), the exhaustive
     modifier-name list (`data/vanilla/modifiers_list.txt`, every numeric
     tech/invention/reform effect, e.g. `factory_input`,
-    `artillery_defence`, `rgo_goods_output_iron`).
+    `artillery_defence`, `rgo_goods_output_iron`), and the 24
+    per-goods modifier matrices (`data/vanilla/{tech,invention,
+    westernisation}_modifiers/<group>/{rgo_goods,factory_goods}_modifiers.csv`:
+    one value per source and per-good effect, `0.0` for no effect).
 
     Reference data lives in one directory per game variant
     (`data/vanilla/`; modded installs generate `data/<mod>/` siblings).
@@ -204,6 +207,12 @@ save games\
       vanilla\                    <- committed vanilla reference data
         inventions_map.json
         modifiers_list.txt
+        tech_modifiers\<type>\      <- per-goods matrices: one dir per
+        invention_modifiers\<type>\    tech/invention type (army, commerce,
+        westernisation_modifiers\      culture, industry, navy) or reform
+          <group>\                     group (economic, military), each holding
+            rgo_goods_modifiers.csv    rgo_goods_modifiers.csv and
+            factory_goods_modifiers.csv  factory_goods_modifiers.csv
       <mod>\                     <- per-mod reference data (generated, not committed)
     example_saves\
       example_japan_1836.v2

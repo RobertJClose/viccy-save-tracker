@@ -397,6 +397,25 @@ class TestInitialiseRouting(unittest.TestCase):
                     ["--output-dir", str(Path(d) / "nope")]
                 )
 
+    def test_none_entry_forwards_output_dir(self):
+        seen: dict[str, list[str]] = {}
+
+        with mock.patch.dict(
+            initialise.TASKS,
+            {
+                "tree": (
+                    "Tree.",
+                    lambda argv: seen.setdefault("tree", argv),
+                    None,
+                ),
+            },
+            clear=True,
+        ):
+            with tempfile.TemporaryDirectory() as d:
+                initialise.main(["--output-dir", d])
+
+        self.assertEqual(seen["tree"], ["--output-dir", d])
+
 
 if __name__ == "__main__":
     unittest.main()

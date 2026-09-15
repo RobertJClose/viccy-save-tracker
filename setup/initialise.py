@@ -27,6 +27,7 @@ from setup.build_modifiers_list import (
     OUTPUT_FILENAME as MODIFIERS_OUTPUT_FILENAME,
 )
 from setup.build_modifiers_list import main as build_modifiers_list_main
+from setup.build_per_goods_matrices import main as build_per_goods_matrices_main
 
 TASKS = {
     "inventions-map": (
@@ -38,6 +39,11 @@ TASKS = {
         "Build modifiers_list.txt (exhaustive modifier names) from the game install.",
         build_modifiers_list_main,
         MODIFIERS_OUTPUT_FILENAME,
+    ),
+    "per-goods-matrices": (
+        "Build the 24 per-goods modifier matrices from the game install.",
+        build_per_goods_matrices_main,
+        None,
     ),
 }
 
@@ -103,8 +109,8 @@ def main(argv: list[str] | None = None) -> None:
     for name, entry in TASKS.items():
         task = entry[1]
         # Optional third element: the file name this task writes inside the
-        # output directory.
-        output_filename = entry[2] if len(entry) > 2 else None
+        # output directory (forwarded as --output), or None for tasks that
+        # write a whole tree and take --output-dir instead.
         print(f"=== {name} ===")
         forwarded: list[str] = []
 
@@ -114,8 +120,11 @@ def main(argv: list[str] | None = None) -> None:
             forwarded += ["--check-save", str(args.check_save)]
         if args.source is not None:
             forwarded += ["--source", str(args.source)]
-        if output_filename is not None:
-            forwarded += ["--output", str(args.output_dir / output_filename)]
+        if len(entry) > 2:
+            if entry[2] is not None:
+                forwarded += ["--output", str(args.output_dir / entry[2])]
+            else:
+                forwarded += ["--output-dir", str(args.output_dir)]
 
         task(forwarded)
 

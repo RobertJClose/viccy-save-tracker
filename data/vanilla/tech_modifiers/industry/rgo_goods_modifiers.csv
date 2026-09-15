@@ -1,0 +1,9 @@
+modifier,water_wheel_power,practical_steam_engine,high_n_low_pressure_steam_engines,steam_turbine,combustion_engine,electrical_power_generation,publishing_industry,mechanical_production,interchangeable_parts,semi_automatization,assembly_line,shift_work,mechanized_mining,clean_coal,cheap_iron,cheap_steel,advanced_metallurgy,electric_furnace,experimental_railroad,early_railroad,iron_railroad,steel_railroad,integral_rail_system,limited_access_roads,basic_chemistry,medicine,inorganic_chemistry,organic_chemistry,electricity,synthetic_polymers
+rgo_goods_output_coal,0,0,0,0,0,0,0,0,0,0,0,0,0.25,0.2,0.1,0.15,0.25,1,0,0,0,0,0,0,0,0,0,0,0,0
+rgo_goods_output_iron,0,0,0,0,0,0,0,0,0,0,0,0,0.25,0.1,0.25,0.15,0.25,1,0,0,0,0,0,0,0,0,0,0,0,0
+rgo_goods_output_precious_metal,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.1,0.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+rgo_goods_output_sulphur,0,0,0,0,0,0,0,0,0,0,0,0,0.25,0.1,0,0,0.25,0,0,0,0,0,0,0,0,0,0,0,0,0
+rgo_size_coal,0,0,0,0,0,0,0,0,0,0,0,0,0,0.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+rgo_size_iron,0,0,0,0,0,0,0,0,0,0,0,0,0,0.2,0.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+rgo_size_precious_metal,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.2,0.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+rgo_size_sulphur,0,0,0,0,0,0,0,0,0,0,0,0,0,0.2,0,0,0.2,0,0,0,0,0,0,0,0,0,0,0,0,0

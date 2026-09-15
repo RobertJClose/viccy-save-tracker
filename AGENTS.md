@@ -49,10 +49,17 @@ Documents\Paradox Interactive\Victoria II\
         initialise.py            setup dispatcher (`python -m setup.initialise`)
         build_inventions_map.py  invention ID -> name mapping builder
         build_modifiers_list.py  exhaustive modifier-name list builder
+        build_per_goods_matrices.py  24 per-goods matrix files builder
       data\
         vanilla\                 committed vanilla reference data (generated)
           inventions_map.json      ID -> name mapping (generated, index == ID)
           modifiers_list.txt       exhaustive modifier names (generated)
+          tech_modifiers\<type>\    per-goods matrices, one dir per tech/
+          invention_modifiers\<type>\  invention type or reform group,
+          westernisation_modifiers\    each holding rgo_goods_modifiers.csv
+            <group>\                   and factory_goods_modifiers.csv
+              rgo_goods_modifiers.csv
+              factory_goods_modifiers.csv
       example_saves\
         example_japan_1836.v2  <- example save for agents to inspect
         example_japan_1845.v2
@@ -255,6 +262,17 @@ If the file is missing or corrupt, the script starts with an empty set
   Each build module owns its `OUTPUT_FILENAME` and keeps a standalone
   `--output <file>` for direct runs. Like tracking output dirs, the setup
   output dir must already exist.
+- **Per-goods matrices record single-source values:** `setup/build_per_goods_matrices.py`
+  writes 24 CSVs (`{tech,invention,westernisation}_modifiers/<group>/
+  {rgo_goods,factory_goods}_modifiers.csv`): rows are the per-good composites
+  from `modifiers_list.txt` (alphabetical), columns are sources in declaration
+  order (bare level names for reforms), cells hold that source's own value
+  (`%g`, `0.0` for no effect) — cross-source summing stays in the spreadsheet.
+  Westernisation files are header-only (reforms grant no per-good bonuses).
+  A composite repeated within one source, a failed value anchor, or a
+  `--check-save` tech/level missing from the columns all fail loudly. A
+  `None` third TASKS entry marks a whole-tree task (forwarded `--output-dir`
+  instead of `--output <file>`).
 - **Stdlib only:** The script uses no third-party packages.
 - **Encoding:** Save files are read as UTF-8 with `errors='replace'`
   (one bad byte must not abort the whole file).

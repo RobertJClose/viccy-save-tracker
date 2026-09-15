@@ -287,3 +287,118 @@ def make_modifiers_game_dir(root: Path) -> Path:
         MOD_ISSUES_FIXTURE, encoding="utf-8"
     )
     return game_dir
+
+
+# A synthetic game install for the per-goods matrices setup task: techs
+# and inventions with per-good values alongside scalars, unit blocks and
+# trigger vocabulary; reforms with scalar-only levels (as in vanilla,
+# where westernisation has no per-good effects).
+PGO_TECH_FIXTURE = """#tech_group_one
+first_tech = {
+\tarea = some_area
+\tyear = 1836
+\tcost = 3600
+\tfactory_input = -0.01
+\trgo_goods_output = {
+\t\tiron = 0.25
+\t}
+\trgo_size = {
+\t\tcoal = 0.2
+\t}
+\tartillery = {
+\t\tdefence = 1
+\t}
+\tai_chance = {
+\t\tfactor = 2
+\t}
+}
+second_tech = {
+\tarea = some_area
+\tyear = 1900
+\tcost = 7200
+\tfactory_goods_output = {
+\t\tfabric = 0.05
+\t}
+}
+"""
+
+PGO_INVENTION_FIXTURE = """first_invention = {
+\tlimit = { first_tech = 1 }
+\tchance = {
+\t\tbase = 2
+\t}
+\teffect = {
+\t\tfactory_throughput = 0.05
+\t\tfactory_goods_throughput = {
+\t\t\tfabric = 0.05
+\t\t}
+\t\tinfantry = {
+\t\t\tdefence = 1
+\t\t}
+\t}
+}
+effectless_invention = {
+\tlimit = { first_tech = 1 }
+}
+"""
+
+PGO_ISSUES_FIXTURE = """economic_reforms = {
+\tland_reform = {
+\t\tno_land_reform = {
+\t\t\tglobal_pop_militancy_modifier = -0.005
+\t\t}
+\t\tyes_land_reform = {
+\t\t\tfarm_rgo_eff = 0.25
+\t\t\ton_execute = {
+\t\t\t\teffect = {
+\t\t\t\t\tany_pop = {
+\t\t\t\t\t\tmilitancy = 1
+\t\t\t\t\t}
+\t\t\t\t}
+\t\t\t}
+\t\t}
+\t}
+}
+military_reforms = {
+\tarmy_schools = {
+\t\tno_army_schools = {
+\t\t\tglobal_pop_militancy_modifier = -0.005
+\t\t}
+\t\tyes_army_schools = {
+\t\t\tland_organisation = 0.1
+\t\t}
+\t}
+}
+"""
+
+# A synthetic save whose techs and reform levels all exist in the
+# PGO_* fixtures above.
+PGO_SAVE = """date="1836.1.2"
+player="TST"
+TST=
+{
+\ttechnology=
+\t{
+\t\tfirst_tech={1 0.000}
+\t}
+\tland_reform=yes_land_reform
+\tarmy_schools=no_army_schools
+}
+"""
+
+
+def make_per_goods_game_dir(root: Path) -> Path:
+    game_dir = root / "game"
+    (game_dir / "technologies").mkdir(parents=True)
+    (game_dir / "inventions").mkdir(parents=True)
+    (game_dir / "common").mkdir(parents=True)
+    (game_dir / "technologies" / "army_tech.txt").write_text(
+        PGO_TECH_FIXTURE, encoding="utf-8"
+    )
+    (game_dir / "inventions" / "army_inventions.txt").write_text(
+        PGO_INVENTION_FIXTURE, encoding="utf-8"
+    )
+    (game_dir / "common" / "issues.txt").write_text(
+        PGO_ISSUES_FIXTURE, encoding="utf-8"
+    )
+    return game_dir
