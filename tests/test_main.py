@@ -379,6 +379,155 @@ class TestProcessExistingSaves(unittest.TestCase):
                 ["1836-01-02"],
             )
 
+    def test_resolve_save_path_bare_name_uses_save_dir(self):
+        with tempfile.TemporaryDirectory() as d:
+            save_dir = Path(d) / "save"
+            save_dir.mkdir()
+            with mock.patch.object(main, "SAVE_DIR", save_dir):
+                self.assertEqual(
+                    main.resolve_save_path("autosave.v2"),
+                    save_dir / "autosave.v2",
+                )
+
+    def test_resolve_save_path_absolute_is_used_as_is(self):
+        with tempfile.TemporaryDirectory() as d:
+            save_dir = Path(d) / "save"
+            save_dir.mkdir()
+            elsewhere = Path(d) / "elsewhere" / "test.v2"
+            with mock.patch.object(main, "SAVE_DIR", save_dir):
+                self.assertEqual(
+                    main.resolve_save_path(str(elsewhere)), elsewhere
+                )
+
+    def test_resolve_save_path_relative_is_cwd_relative(self):
+        with tempfile.TemporaryDirectory() as d:
+            save_dir = Path(d) / "save"
+            save_dir.mkdir()
+            relative = os.path.join("subdir", "mysave.v2")
+            with mock.patch.object(main, "SAVE_DIR", save_dir):
+                resolved = main.resolve_save_path(relative)
+            self.assertEqual(resolved, Path(relative))
+            self.assertNotEqual(resolved, save_dir / relative)
+
+    def test_processes_absolute_path_outside_save_dir(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            save_dir = root / "save"
+            save_dir.mkdir()
+            elsewhere = root / "elsewhere"
+            elsewhere.mkdir()
+            (elsewhere / "test.v2").write_text(
+                MINIMAL_SAVE, encoding="utf-8"
+            )
+            out = root / "out"
+            out.mkdir()
+
+            with mock.patch.object(main, "SAVE_DIR", save_dir):
+                with redirect_stdout(io.StringIO()):
+                    main.process_existing_saves(
+                        out, [str(elsewhere / "test.v2")]
+                    )
+
+            rows = read_csv(out / "goods_prices.csv")
+            self.assertEqual(rows[0], ["date", "good", "price"])
+            self.assertEqual(len(rows), len(MINIMAL_GOODS) + 1)
+            self.assertEqual(
+                json.loads((out / "processed_dates.json").read_text(encoding="utf-8")),
+                ["1836-01-02"],
+            )
+
+    def test_processes_real_example_save_by_absolute_path(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            save_dir = root / "save"
+            save_dir.mkdir()
+            out = root / "out"
+            out.mkdir()
+
+            self.assertTrue(EXAMPLE_SAVE.is_absolute())
+
+            with mock.patch.object(main, "SAVE_DIR", save_dir):
+                with redirect_stdout(io.StringIO()):
+                    main.process_existing_saves(out, [str(EXAMPLE_SAVE)])
+
+            rows = read_csv(out / "goods_prices.csv")
+            self.assertEqual(rows[0], ["date", "good", "price"])
+            self.assertEqual(len(rows), 48 + 1)
+            self.assertEqual(
+                json.loads((out / "processed_dates.json").read_text(encoding="utf-8")),
+                ["1836-01-02"],
+            )
+
+    def test_missing_absolute_path_prints_not_found(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            save_dir = root / "save"
+            save_dir.mkdir()
+            out = root / "out"
+            out.mkdir()
+            missing = str(root / "elsewhere" / "missing.v2")
+
+            stdout = io.StringIO()
+            with mock.patch.object(main, "SAVE_DIR", save_dir):
+                with redirect_stdout(stdout):
+                    main.process_existing_saves(out, [missing])
+
+            self.assertIn(f"Not found: {missing}", stdout.getvalue())
+            self.assertFalse((out / "goods_prices.csv").exists())
+
+    def test_processes_cwd_relative_path(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            save_dir = root / "save"
+            save_dir.mkdir()
+            elsewhere = root / "elsewhere"
+            elsewhere.mkdir()
+            (elsewhere / "test.v2").write_text(
+                MINIMAL_SAVE, encoding="utf-8"
+            )
+            out = root / "out"
+            out.mkdir()
+            relative = os.path.join("elsewhere", "test.v2")
+
+            old_cwd = os.getcwd()
+            os.chdir(root)
+            try:
+                with mock.patch.object(main, "SAVE_DIR", save_dir):
+                    with redirect_stdout(io.StringIO()):
+                        main.process_existing_saves(out, [relative])
+            finally:
+                os.chdir(old_cwd)
+
+            rows = read_csv(out / "goods_prices.csv")
+            self.assertEqual(rows[0], ["date", "good", "price"])
+            self.assertEqual(len(rows), len(MINIMAL_GOODS) + 1)
+            self.assertEqual(
+                json.loads((out / "processed_dates.json").read_text(encoding="utf-8")),
+                ["1836-01-02"],
+            )
+
+    def test_missing_relative_path_prints_not_found(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            save_dir = root / "save"
+            save_dir.mkdir()
+            out = root / "out"
+            out.mkdir()
+            missing = os.path.join("elsewhere", "missing.v2")
+
+            old_cwd = os.getcwd()
+            os.chdir(root)
+            try:
+                stdout = io.StringIO()
+                with mock.patch.object(main, "SAVE_DIR", save_dir):
+                    with redirect_stdout(stdout):
+                        main.process_existing_saves(out, [missing])
+            finally:
+                os.chdir(old_cwd)
+
+            self.assertIn(f"Not found: {missing}", stdout.getvalue())
+            self.assertFalse((out / "goods_prices.csv").exists())
+
 
 class TestWatch(unittest.TestCase):
 
@@ -520,22 +669,59 @@ class TestMain(unittest.TestCase):
         with self.assertRaises(SystemExit):
             self.run_main(argv)
 
-    def test_save_file_with_path_errors(self):
-        for bad in (
-            "subdir/mysave.v2",
-            "subdir\\mysave.v2",
-            "../mysave.v2",
+    def test_valid_once_with_absolute_path_calls_process_existing_saves(self):
+        absolute = str(Path(self.tmp.name) / "elsewhere" / "test.v2")
+        self.assertTrue(Path(absolute).is_absolute())
+        argv = ["main.py", "--once", "--files", absolute, str(self.out)]
+        with mock.patch("main.process_existing_saves") as mock_process:
+            self.run_main(argv)
+        mock_process.assert_called_once_with(self.out, [absolute])
+
+    def test_absolute_non_v2_extension_errors(self):
+        absolute = str(Path(self.tmp.name) / "elsewhere" / "notes.txt")
+        argv = ["main.py", "--once", "--files", absolute, str(self.out)]
+        with self.assertRaises(SystemExit):
+            self.run_main(argv)
+
+    def test_valid_once_with_relative_path_calls_process_existing_saves(self):
+        for relative in (
+            os.path.join("subdir", "mysave.v2"),
+            os.path.join("..", "mysave.v2"),
         ):
-            with self.subTest(bad=bad):
+            with self.subTest(relative=relative):
                 argv = [
                     "main.py",
                     "--once",
                     "--files",
-                    bad,
+                    relative,
                     str(self.out),
                 ]
-                with self.assertRaises(SystemExit):
+                with mock.patch("main.process_existing_saves") as mock_process:
                     self.run_main(argv)
+                mock_process.assert_called_once_with(self.out, [relative])
+                mock_process.reset_mock()
+
+    def test_valid_once_with_mixed_forms_calls_process_existing_saves(self):
+        absolute = str(Path(self.tmp.name) / "elsewhere" / "test.v2")
+        relative = os.path.join("subdir", "other.v2")
+        entries = f"autosave.v2,{relative},{absolute}"
+        argv = ["main.py", "--once", "--files", entries, str(self.out)]
+        with mock.patch("main.process_existing_saves") as mock_process:
+            self.run_main(argv)
+        mock_process.assert_called_once_with(
+            self.out, ["autosave.v2", relative, absolute]
+        )
+
+    def test_relative_non_v2_extension_errors(self):
+        argv = [
+            "main.py",
+            "--once",
+            "--files",
+            os.path.join("subdir", "notes.txt"),
+            str(self.out),
+        ]
+        with self.assertRaises(SystemExit):
+            self.run_main(argv)
 
     def test_empty_save_file_name_errors(self):
         argv = ["main.py", "--once", "--files", "autosave.v2,", str(self.out)]

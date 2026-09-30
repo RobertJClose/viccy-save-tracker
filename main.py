@@ -125,6 +125,31 @@ def process_save(
     return True
 
 
+def resolve_save_path(filename: str) -> Path:
+    """
+    Resolve one --files entry to a save path.
+
+    Bare file names live in the save directory; absolute paths and
+    relative paths with directories are used as-is (the latter resolve
+    against the current working directory, e.g. a file under
+    example_saves/ for testing).
+    """
+
+    candidate = Path(filename)
+
+    if candidate.is_absolute():
+        return candidate
+
+    if (
+        "/" in filename
+        or "\\" in filename
+        or candidate.name != filename
+    ):
+        return candidate
+
+    return SAVE_DIR / filename
+
+
 def process_existing_saves(output_dir: Path, files: list[str]) -> None:
     """
     Process the user-chosen save files (see --files).
@@ -139,7 +164,7 @@ def process_existing_saves(output_dir: Path, files: list[str]) -> None:
     print()
 
     for filename in files:
-        path = SAVE_DIR / filename
+        path = resolve_save_path(filename)
 
         if path.exists():
             process_save(path, output_file, processed_file, processed_dates)
@@ -255,7 +280,11 @@ def main() -> None:
             "Comma-separated save file(s) to record with --once, e.g. "
             "autosave.v2, mysave.v2 or "
             "autosave.v2,oldautosave.v2,olderautosave.v2. "
-            "Each file must be a .v2 file name in the save directory. "
+            "Each file must be a .v2 file name in the save directory, an "
+            "absolute path to a .v2 file, or a relative path to a .v2 file "
+            "(resolved against the current working directory, e.g. "
+            "example_saves/example_japan_1836.v2 when running from the "
+            "tracker directory). "
             "You are responsible for choosing the files that belong to the "
             "save game being tracked."
         ),
@@ -277,16 +306,6 @@ def main() -> None:
         for filename in files:
             if not filename:
                 parser.error("Empty save file name in --files.")
-            if (
-                "/" in filename
-                or "\\" in filename
-                or Path(filename).name != filename
-            ):
-                parser.error(
-                    f"Invalid save file: {filename}. "
-                    "--files accepts only .v2 file names in the save "
-                    "directory (no paths)."
-                )
             if not filename.lower().endswith(".v2"):
                 parser.error(
                     f"Invalid save file: {filename}. "

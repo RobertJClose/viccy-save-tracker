@@ -96,8 +96,9 @@ can locate the `.v2` files at `Path(__file__).resolve().parent.parent`.
 ```bash
 # One-shot: record the file(s) you name and exit. It is your
 # responsibility to pick the files that belong to this save game.
-# Each --files entry must be a .v2 file name in the save directory
-# (no paths).
+# Each --files entry is a .v2 file name in the save directory, an
+# absolute path to a .v2 file, or a relative path to a .v2 file
+# (resolved against the current working directory).
 python main.py --once --files autosave.v2 saves\france
 
 # The same, but also backfill from the previous two autosaves (only
@@ -127,11 +128,25 @@ If neither flag is given, `--once` is the default (and still requires
 
 Before and after any change to the Python sources (`main.py`,
 `core/`, `domains/`, `setup/`, ...), run the unit test suite from
-the repository root:
+the repository root, streaming output rather than redirecting it
+into a file:
 
 ```bash
 python -m unittest discover -s tests -v
 ```
+
+(For a quiet pass/fail summary without `-v`'s flood:
+`python -m unittest discover -s tests 2>&1 | tail -n 8`.)
+
+> Shell hygiene — adjacent to this repo's strict focus, recorded
+> after a real incident: the shell here is Git Bash on Windows, not
+> cmd. Never redirect to `NUL` (it creates a literal `NUL` file —
+> use `/dev/null` or no redirect), always quote paths and prefer
+> forward slashes, and never redirect command output into files.
+> An unquoted `2> C:\...` redirect once had its backslashes eaten
+> by bash and landed as a junk file in the repo. Check
+> `git status --porcelain` after running commands and remove any
+> stray files you created.
 
 The tests document the script's current behaviour end-to-end, including
 the parsing helpers, the dedup ledger, the CSV output format, CLI
@@ -329,8 +344,9 @@ If the file is missing or corrupt, the script starts with an empty set
   `--once --files` for manual recovery). Do not reintroduce them into
   the watch loop without solving the cross-world contamination.
 - **`--once` is a manual operation:** it requires `--files` naming the
-  specific `.v2` save file(s) to record (plain file names in the save
-  directory, no paths). Correctness is the user's
+  specific `.v2` save file(s) to record (bare file names in the save
+  directory, absolute paths, or paths relative to the current working
+  directory). Correctness is the user's
   responsibility; the script intentionally does not guess.
 
 ## Modded game support
