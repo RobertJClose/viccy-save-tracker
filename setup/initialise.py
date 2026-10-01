@@ -63,6 +63,9 @@ from setup.research_modifiers.build_military_matrices import (
 from setup.research_modifiers.build_rebels_matrices import (
     main as build_rebels_matrices_main,
 )
+from setup.research_modifiers.build_matrix_index import (
+    main as build_matrix_index_main,
+)
 
 TASKS = {
     "inventions-map": (
@@ -129,6 +132,11 @@ TASKS = {
     "rebels-matrices": (
         "Build the rebels modifier matrices from the game install.",
         build_rebels_matrices_main,
+        None,
+    ),
+    "matrix-index": (
+        "Index the generated matrices into matrix_index.csv (must run last).",
+        build_matrix_index_main,
         None,
     ),
 }

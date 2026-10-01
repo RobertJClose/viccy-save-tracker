@@ -67,10 +67,12 @@ Documents\Paradox Interactive\Victoria II\
           build_{research,economic}_matrices.py
           build_military_matrices.py  military category matrix task
           build_rebels_matrices.py  rebels category matrix task
+          build_matrix_index.py  matrix_index.csv discovery index builder
       data\
         vanilla\                 committed vanilla reference data (generated)
           inventions_map.json      ID -> name mapping (generated, index == ID)
           modifiers_from_research_list.txt       exhaustive research modifiers (generated)
+          matrix_index.csv      one row per generated matrix (generated)
           tech_modifiers\<type>\    matrices, one dir per tech/invention
           invention_modifiers\<type>\  type or reform group, each holding
           westernisation_modifiers\    rgo/factory per-goods files, land/naval
@@ -336,10 +338,9 @@ If the file is missing or corrupt, the script starts with an empty set
 - **Per-goods matrices record single-source values:** `setup/research_modifiers/build_per_goods_matrices.py`
   writes 24 CSVs (`{tech,invention,westernisation}_modifiers/<group>/
   {rgo_goods,factory_goods}_modifiers.csv`): rows are the per-good composites
-  from `modifiers_from_research_list.txt` (alphabetical), columns are sources in declaration
+  from `modifiers_from_research_list.txt`, columns are sources in declaration
   order (bare level names for reforms), cells hold that source's own value
   (`%g`, `0.0` for no effect) — cross-source summing stays in the spreadsheet.
-  Westernisation files are header-only (reforms grant no per-good bonuses).
   A composite repeated within one source, a failed value anchor, or a
    `--check-save` tech/level missing from the columns all fail loudly. A
    `None` third TASKS entry marks a whole-tree task (forwarded `--output-dir`
@@ -348,20 +349,36 @@ If the file is missing or corrupt, the script starts with an empty set
   population, diplomacy, other, research, economic, military and rebels
   each own a `setup/research_modifiers/build_<category>_matrices.py`
   task writing `<category>_modifiers.csv` into the same 12 group directories
-  (no new top-level dirs, no monolith module). Rows are the agreed exact name
-  sets (verbatim, twins and `seperatism` included); everything mechanical
-  (value collectors, `format_number`, exact-matrix rendering, anchor/coverage
-  checks, `--check-save` column validation) is imported from
+  (no new top-level dirs, no monolith module). Rows come from the task's
+  agreed name set (verbatim, twins and `seperatism` included); everything
+  mechanical (value collectors, `format_number`, exact-matrix rendering,
+  anchor/coverage checks, `--check-save` column validation) is imported from
   `setup/research_modifiers/build_per_goods_matrices.py`. Any future category follows the
   same template; per-unit is a 24-file variant (see next).
+- **Every matrix lists only the rows its group actually grants:** for
+  per-goods and per-unit the rows are discovered from the scraped values
+  (alphabetical); for the small categories they are the agreed set
+  filtered to the rows that group grants (agreed order kept). A group
+  with no effect in a category therefore yields a header-only file — the
+  one rule for all thirteen families, chosen because the matrices are
+  copy/pasted into a spreadsheet and recorded zeros are just noise there.
+  `check_rows_covered` (vanilla only) guarantees the union of the 12 group
+  files still holds every agreed row, so filtering cannot lose a
+  modifier silently. `matrix_index.csv` (see next) is the discovery index.
+- **`matrix_index.csv` lists every generated matrix:** the
+  `matrix-index` task (registered last) reads the written matrices back —
+  not shared in-memory state, so it is correct whatever ran and in what
+  order — and writes `file,kind,rows,columns,nonzero_cells` rows sorted by
+  path, so the spreadsheet can skip the ~110 header-only files without
+  scanning them. It accepts and ignores `--game-dir`/`--check-save`/
+  `--source` so the dispatcher can forward them uniformly.
 - **Per-unit mirrors per-goods with a land/naval split:** `setup/research_modifiers/build_per_unit_matrices.py`
   writes 24 CSVs (`{tech,invention,westernisation}_modifiers/<group>/
   per_unit_{land,naval}_modifiers.csv`): rows are the unit-scope composites
   whose scope is a land unit (air counts as land) or a naval unit,
   everything else identical to per-goods (declaration-order columns,
-  single-source `%g` values, header-only westernisation files, loud
-  anchors/duplicates). A test locks the agreed 11-land/7-naval scope
-  split.
+  single-source `%g` values, loud anchors/duplicates). A test locks the
+  agreed 11-land/7-naval scope split.
 - **Stdlib only:** The script uses no third-party packages.
 - **Encoding:** Save files are read as UTF-8 with `errors='replace'`
   (one bad byte must not abort the whole file).

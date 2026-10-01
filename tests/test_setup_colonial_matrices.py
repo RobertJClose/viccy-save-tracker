@@ -68,10 +68,7 @@ class TestColonialMain(unittest.TestCase):
                     encoding="utf-8"
                 ),
                 "modifier,col_tech,plain_tech\n"
-                "colonial_life_rating,0,0\n"
-                "colonial_migration,0,0\n"
-                "colonial_points,100,0\n"
-                "colonial_prestige,0,0\n",
+                "colonial_points,100,0\n",
             )
             self.assertEqual(
                 (
@@ -79,14 +76,12 @@ class TestColonialMain(unittest.TestCase):
                     / "invention_modifiers/army/colonial_modifiers.csv"
                 ).read_text(encoding="utf-8"),
                 "modifier,col_invention,effectless_invention\n"
-                "colonial_life_rating,0,0\n"
-                "colonial_migration,0,0\n"
-                "colonial_points,0,0\n"
                 "colonial_prestige,0.1,0\n",
             )
 
-    def test_westernisation_files_hold_only_zeros(self):
-        # Fixed rows are always emitted; reforms grant none of these.
+    def test_westernisation_files_are_header_only(self):
+        # Reforms grant none of the colonial rows, so the agreed rows are
+        # filtered out and the files hold only the column header.
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             out = self.run_main(root)
@@ -95,22 +90,14 @@ class TestColonialMain(unittest.TestCase):
                     out
                     / "westernisation_modifiers/economic/colonial_modifiers.csv"
                 ).read_text(encoding="utf-8"),
-                "modifier,no_land_reform,yes_land_reform\n"
-                "colonial_life_rating,0,0\n"
-                "colonial_migration,0,0\n"
-                "colonial_points,0,0\n"
-                "colonial_prestige,0,0\n",
+                "modifier,no_land_reform,yes_land_reform\n",
             )
             self.assertEqual(
                 (
                     out
                     / "westernisation_modifiers/military/colonial_modifiers.csv"
                 ).read_text(encoding="utf-8"),
-                "modifier,no_army_schools,yes_army_schools\n"
-                "colonial_life_rating,0,0\n"
-                "colonial_migration,0,0\n"
-                "colonial_points,0,0\n"
-                "colonial_prestige,0,0\n",
+                "modifier,no_army_schools,yes_army_schools\n",
             )
 
     def test_vanilla_anchors_reject_fixture(self):

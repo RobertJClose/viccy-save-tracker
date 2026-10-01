@@ -70,12 +70,8 @@ class TestResearchMain(unittest.TestCase):
                     encoding="utf-8"
                 ),
                 "modifier,res_tech,plain_tech\n"
-                "civilization_progress_modifier,0,0\n"
                 "education_efficiency,0.1,0\n"
-                "education_efficiency_modifier,0,0\n"
-                "increase_research,0.5,0\n"
-                "plurality,0,0\n"
-                "technology_cost,0,0\n",
+                "increase_research,0.5,0\n",
             )
             self.assertEqual(
                 (
@@ -83,29 +79,21 @@ class TestResearchMain(unittest.TestCase):
                     / "invention_modifiers/army/research_modifiers.csv"
                 ).read_text(encoding="utf-8"),
                 "modifier,res_invention,effectless_invention\n"
-                "civilization_progress_modifier,0,0\n"
-                "education_efficiency,0,0\n"
                 "education_efficiency_modifier,0.15,0\n"
-                "increase_research,0,0\n"
-                "plurality,0.1,0\n"
-                "technology_cost,0,0\n",
+                "plurality,0.1,0\n",
             )
 
     def test_westernisation_reform_values_recorded(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             out = self.run_main(root)
+            # Only technology_cost is granted by a reform level here.
             self.assertEqual(
                 (
                     out
                     / "westernisation_modifiers/economic/research_modifiers.csv"
                 ).read_text(encoding="utf-8"),
                 "modifier,no_land_reform,yes_land_reform\n"
-                "civilization_progress_modifier,0,0\n"
-                "education_efficiency,0,0\n"
-                "education_efficiency_modifier,0,0\n"
-                "increase_research,0,0\n"
-                "plurality,0,0\n"
                 "technology_cost,0,8000\n",
             )
             self.assertEqual(
@@ -113,13 +101,7 @@ class TestResearchMain(unittest.TestCase):
                     out
                     / "westernisation_modifiers/military/research_modifiers.csv"
                 ).read_text(encoding="utf-8"),
-                "modifier,no_army_schools,yes_army_schools\n"
-                "civilization_progress_modifier,0,0\n"
-                "education_efficiency,0,0\n"
-                "education_efficiency_modifier,0,0\n"
-                "increase_research,0,0\n"
-                "plurality,0,0\n"
-                "technology_cost,0,0\n",
+                "modifier,no_army_schools,yes_army_schools\n",
             )
 
     def test_vanilla_anchors_reject_fixture(self):

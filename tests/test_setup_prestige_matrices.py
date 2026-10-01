@@ -67,9 +67,7 @@ class TestPrestigeMain(unittest.TestCase):
                     encoding="utf-8"
                 ),
                 "modifier,col_tech,plain_tech\n"
-                "permanent_prestige,0,0\n"
-                "prestige,0.05,0\n"
-                "shared_prestige,0,0\n",
+                "prestige,0.05,0\n",
             )
             self.assertEqual(
                 (
@@ -77,13 +75,12 @@ class TestPrestigeMain(unittest.TestCase):
                     / "invention_modifiers/army/prestige_modifiers.csv"
                 ).read_text(encoding="utf-8"),
                 "modifier,col_invention,effectless_invention\n"
-                "permanent_prestige,1,0\n"
-                "prestige,0,0\n"
-                "shared_prestige,0,0\n",
+                "permanent_prestige,1,0\n",
             )
 
-    def test_westernisation_files_hold_only_zeros(self):
-        # Fixed rows are always emitted; reforms grant none of these.
+    def test_westernisation_files_are_header_only(self):
+        # Reforms grant none of the prestige rows, so the agreed rows are
+        # filtered out and the files hold only the column header.
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             out = self.run_main(root)
@@ -92,20 +89,14 @@ class TestPrestigeMain(unittest.TestCase):
                     out
                     / "westernisation_modifiers/economic/prestige_modifiers.csv"
                 ).read_text(encoding="utf-8"),
-                "modifier,no_land_reform,yes_land_reform\n"
-                "permanent_prestige,0,0\n"
-                "prestige,0,0\n"
-                "shared_prestige,0,0\n",
+                "modifier,no_land_reform,yes_land_reform\n",
             )
             self.assertEqual(
                 (
                     out
                     / "westernisation_modifiers/military/prestige_modifiers.csv"
                 ).read_text(encoding="utf-8"),
-                "modifier,no_army_schools,yes_army_schools\n"
-                "permanent_prestige,0,0\n"
-                "prestige,0,0\n"
-                "shared_prestige,0,0\n",
+                "modifier,no_army_schools,yes_army_schools\n",
             )
 
     def test_vanilla_anchors_reject_fixture(self):

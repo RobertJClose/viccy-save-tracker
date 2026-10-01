@@ -1,9 +1,2 @@
 modifier,no_land_reform,yes_land_reform,no_admin_reform,yes_admin_reform,no_finance_reform,yes_finance_reform,finance_reform_two,no_education_reform,yes_education_reform,no_transport_improv,yes_transport_improv,no_pre_indust,yes_pre_indust,no_industrial_construction,yes_industrial_construction
 global_pop_militancy_modifier,-0.005,0,-0.005,0,-0.005,0,0,-0.005,0,-0.005,0,-0.005,0,-0.005,0
-rebel_org_gain_all,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-rebel_org_gain_communist_rebels,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-rebel_org_gain_fascist_rebels,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-rebel_org_gain_nationalist_rebels,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-rebel_org_gain_reactionary_rebels,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-seperatism,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-suppression_points_modifier,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

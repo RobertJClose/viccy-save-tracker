@@ -393,7 +393,9 @@ def check_rows_covered(
     """Fail if a category row never occurs in any column (vanilla only).
 
     Catches typos in a task's row set: every agreed name must be granted
-    by at least one source.
+    by at least one source. Since the per-group rendering keeps only the
+    rows a group grants, this check is also what guarantees the union of
+    the 12 group files still holds every agreed row.
     """
     seen = {
         name
@@ -414,10 +416,23 @@ def check_rows_covered(
 def render_exact_matrix(
     columns: list[tuple[str, dict[str, float]]], rows: tuple[str, ...]
 ) -> str:
-    """Render one category CSV: fixed rows, ``0.0`` for no effect."""
+    """Render one category CSV for the given columns.
+
+    Rows are the task's agreed set, filtered to the rows that at least
+    one column in *this group* actually grants (agreed order kept), so a
+    group with no effect in the category yields a header-only file —
+    matching the per-goods and per-unit matrices. Because
+    ``check_rows_covered`` fails when an agreed row is granted by no
+    source at all, the union of the 12 group files still contains every
+    agreed row. Cells hold that source's own value (``0.0`` for no
+    effect within a row).
+    """
+    granted = {name for _, values in columns for name in values}
     lines = ["modifier," + ",".join(name for name, _ in columns)]
 
     for row in rows:
+        if row not in granted:
+            continue
         lines.append(
             row
             + ","

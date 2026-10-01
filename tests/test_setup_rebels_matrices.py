@@ -17,17 +17,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from setup.research_modifiers import build_rebels_matrices
 from helpers import REB_SAVE, make_rebels_game_dir
 
-ZERO_ROWS = (
-    "global_pop_militancy_modifier,0,0\n"
-    "rebel_org_gain_all,0,0\n"
-    "rebel_org_gain_communist_rebels,0,0\n"
-    "rebel_org_gain_fascist_rebels,0,0\n"
-    "rebel_org_gain_nationalist_rebels,0,0\n"
-    "rebel_org_gain_reactionary_rebels,0,0\n"
-    "seperatism,0,0\n"
-    "suppression_points_modifier,0,0\n"
-)
-
 
 class TestRebelsRows(unittest.TestCase):
 
@@ -83,7 +72,7 @@ class TestRebelsMain(unittest.TestCase):
                     encoding="utf-8"
                 ),
                 "modifier,reb_tech,plain_tech\n"
-                + ZERO_ROWS.replace("seperatism,0,0\n", "seperatism,0.5,0\n"),
+                "seperatism,0.5,0\n",
             )
             self.assertEqual(
                 (
@@ -91,28 +80,22 @@ class TestRebelsMain(unittest.TestCase):
                     / "invention_modifiers/culture/rebels_modifiers.csv"
                 ).read_text(encoding="utf-8"),
                 "modifier,reb_invention,effectless_invention\n"
-                + ZERO_ROWS.replace(
-                    "rebel_org_gain_all,0,0\n", "rebel_org_gain_all,-0.25,0\n"
-                ).replace(
-                    "suppression_points_modifier,0,0\n",
-                    "suppression_points_modifier,0.25,0\n",
-                ),
+                "rebel_org_gain_all,-0.25,0\n"
+                "suppression_points_modifier,0.25,0\n",
             )
 
     def test_westernisation_reform_values_recorded(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             out = self.run_main(root)
+            # Reforms grant only the militancy row in this fixture.
             self.assertEqual(
                 (
                     out
                     / "westernisation_modifiers/economic/rebels_modifiers.csv"
                 ).read_text(encoding="utf-8"),
                 "modifier,no_land_reform,yes_land_reform\n"
-                + ZERO_ROWS.replace(
-                    "global_pop_militancy_modifier,0,0\n",
-                    "global_pop_militancy_modifier,-0.005,0\n",
-                ),
+                "global_pop_militancy_modifier,-0.005,0\n",
             )
             self.assertEqual(
                 (
@@ -120,10 +103,7 @@ class TestRebelsMain(unittest.TestCase):
                     / "westernisation_modifiers/military/rebels_modifiers.csv"
                 ).read_text(encoding="utf-8"),
                 "modifier,no_army_schools,yes_army_schools\n"
-                + ZERO_ROWS.replace(
-                    "global_pop_militancy_modifier,0,0\n",
-                    "global_pop_militancy_modifier,-0.005,0\n",
-                ),
+                "global_pop_militancy_modifier,-0.005,0\n",
             )
 
     def test_vanilla_anchors_reject_fixture(self):

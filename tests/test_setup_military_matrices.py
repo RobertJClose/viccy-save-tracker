@@ -76,12 +76,6 @@ class TestMilitaryMain(unittest.TestCase):
              "--source", "modded", *extra]
         )
 
-    def read_body(self, path: Path) -> dict[str, list[str]]:
-        lines = path.read_text(encoding="utf-8").splitlines()
-        return dict(
-            (row.split(",")[0], row.split(",")[1:]) for row in lines[1:]
-        )
-
     def test_writes_expected_files(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
@@ -102,40 +96,50 @@ class TestMilitaryMain(unittest.TestCase):
             ).read_text(encoding="utf-8")
             tech_lines = tech_text.splitlines()
             self.assertEqual(tech_lines[0], "modifier,mil_tech,plain_tech")
-            self.assertEqual(len(tech_lines), 33)
-            body = self.read_body(out / "tech_modifiers/army/military_modifiers.csv")
-            self.assertEqual(body["morale"], ["0.25", "0"])
-            self.assertEqual(body["military_tactics"], ["0.25", "0"])
+            # Granted rows only, in the task's agreed row order.
             self.assertEqual(
-                body["army_base_supply_consumption"], ["0.05", "0"]
+                tech_lines[1:],
+                [
+                    "army_base_supply_consumption,0.05,0",
+                    "military_tactics,0.25,0",
+                    "morale,0.25,0",
+                ],
             )
-            self.assertEqual(body["war_exhaustion"], ["0", "0"])
-            inv_body = self.read_body(
+            inv_text = (
                 out / "invention_modifiers/navy/military_modifiers.csv"
+            ).read_text(encoding="utf-8")
+            inv_lines = inv_text.splitlines()
+            self.assertEqual(
+                inv_lines[0], "modifier,mil_invention,effectless_invention"
             )
             self.assertEqual(
-                inv_body["navy_base_maximum_speed"], ["1", "0"]
+                inv_lines[1:],
+                [
+                    "navy_base_maximum_speed,1,0",
+                    "war_exhaustion,-0.1,0",
+                ],
             )
-            self.assertEqual(inv_body["war_exhaustion"], ["-0.1", "0"])
-            self.assertEqual(inv_body["morale"], ["0", "0"])
 
     def test_westernisation_reform_values_recorded(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             out = self.run_main(root)
-            eco_body = self.read_body(
-                out
-                / "westernisation_modifiers/economic/military_modifiers.csv"
+            # Reforms grant only land_organisation in this fixture.
+            self.assertEqual(
+                (
+                    out
+                    / "westernisation_modifiers/military/military_modifiers.csv"
+                ).read_text(encoding="utf-8"),
+                "modifier,no_army_schools,yes_army_schools\n"
+                "land_organisation,0,0.1\n",
             )
-            self.assertEqual(len(eco_body), 32)
-            self.assertEqual(eco_body["land_organisation"], ["0", "0"])
-            self.assertEqual(eco_body["morale"], ["0", "0"])
-            mil_body = self.read_body(
-                out
-                / "westernisation_modifiers/military/military_modifiers.csv"
+            self.assertEqual(
+                (
+                    out
+                    / "westernisation_modifiers/economic/military_modifiers.csv"
+                ).read_text(encoding="utf-8"),
+                "modifier,no_land_reform,yes_land_reform\n",
             )
-            self.assertEqual(mil_body["land_organisation"], ["0", "0.1"])
-            self.assertEqual(mil_body["morale"], ["0", "0"])
 
     def test_vanilla_anchors_reject_fixture(self):
         with tempfile.TemporaryDirectory() as d:

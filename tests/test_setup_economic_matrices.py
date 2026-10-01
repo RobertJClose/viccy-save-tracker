@@ -83,14 +83,16 @@ class TestEconomicMain(unittest.TestCase):
             ).read_text(encoding="utf-8")
             lines = text.splitlines()
             self.assertEqual(lines[0], "modifier,res_tech,plain_tech")
-            self.assertEqual(len(lines), 20)
-            body = dict(
-                (row.split(",")[0], row.split(",")[1:]) for row in lines[1:]
+            # Only the granted rows survive the per-group filter, in the
+            # task's agreed row order.
+            self.assertEqual(
+                lines[1:],
+                [
+                    "factory_input,-0.01,0",
+                    "farm_rgo_eff,0.25,0",
+                    "tax_eff,3,0",
+                ],
             )
-            self.assertEqual(body["tax_eff"], ["3", "0"])
-            self.assertEqual(body["factory_input"], ["-0.01", "0"])
-            self.assertEqual(body["farm_rgo_eff"], ["0.25", "0"])
-            self.assertEqual(body["farm_RGO_eff"], ["0", "0"])
             text = (
                 out / "invention_modifiers/army/economic_modifiers.csv"
             ).read_text(encoding="utf-8")
@@ -98,11 +100,7 @@ class TestEconomicMain(unittest.TestCase):
             self.assertEqual(
                 lines[0], "modifier,res_invention,effectless_invention"
             )
-            body = dict(
-                (row.split(",")[0], row.split(",")[1:]) for row in lines[1:]
-            )
-            self.assertEqual(body["tax_eff"], ["1", "0"])
-            self.assertEqual(body["rgo_output"], ["0.05", "0"])
+            self.assertEqual(lines[1:], ["rgo_output,0.05,0", "tax_eff,1,0"])
 
     def test_westernisation_reform_values_recorded(self):
         with tempfile.TemporaryDirectory() as d:
@@ -116,21 +114,13 @@ class TestEconomicMain(unittest.TestCase):
             self.assertEqual(
                 lines[0], "modifier,no_land_reform,yes_land_reform"
             )
-            body = dict(
-                (row.split(",")[0], row.split(",")[1:]) for row in lines[1:]
-            )
-            self.assertEqual(body["farm_rgo_eff"], ["0", "0.25"])
-            self.assertEqual(body["tax_eff"], ["0", "0"])
+            self.assertEqual(lines[1:], ["farm_rgo_eff,0,0.25"])
             text = (
                 out
                 / "westernisation_modifiers/military/economic_modifiers.csv"
             ).read_text(encoding="utf-8")
-            lines = text.splitlines()
             self.assertEqual(
-                lines[0], "modifier,no_army_schools,yes_army_schools"
-            )
-            self.assertTrue(
-                all(row.endswith(",0,0") for row in lines[1:])
+                text, "modifier,no_army_schools,yes_army_schools\n"
             )
 
     def test_vanilla_anchors_reject_fixture(self):

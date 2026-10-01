@@ -281,6 +281,44 @@ class TestValidateAgainstSave(unittest.TestCase):
             )
 
 
+class TestRenderExactMatrix(unittest.TestCase):
+    """The per-group row filter shared by all small-category tasks."""
+
+    def test_keeps_only_rows_granted_in_this_group(self):
+        columns = [
+            ("first_tech", {"tax_eff": 5.0, "tax_efficiency": 0.1}),
+            ("second_tech", {"tax_eff": 3.0}),
+        ]
+        self.assertEqual(
+            build_per_goods_matrices.render_exact_matrix(
+                columns,
+                ("tax_eff", "tax_efficiency", "factory_input", "loan_interest"),
+            ),
+            "modifier,first_tech,second_tech\n"
+            "tax_eff,5,3\n"
+            "tax_efficiency,0.1,0\n",
+        )
+
+    def test_header_only_when_nothing_granted(self):
+        self.assertEqual(
+            build_per_goods_matrices.render_exact_matrix(
+                [("first_tech", {"morale": 0.5})], ("tax_eff",)
+            ),
+            "modifier,first_tech\n",
+        )
+
+    def test_agreed_row_order_is_preserved(self):
+        # Rows are emitted in the task's agreed order, not alphabetical
+        # and not in discovery order.
+        columns = [("t", {"z_row": 1.0, "a_row": 2.0})]
+        self.assertEqual(
+            build_per_goods_matrices.render_exact_matrix(
+                columns, ("z_row", "a_row")
+            ),
+            "modifier,t\nz_row,1\na_row,2\n",
+        )
+
+
 class TestPerGoodsMain(unittest.TestCase):
 
     def run_main(self, root: Path, *extra: str) -> Path:

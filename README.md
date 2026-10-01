@@ -51,7 +51,12 @@ files suitable for import into LibreOffice Calc.
     and one `<category>_modifiers.csv` per group directory for each of the
     colonial, prestige, population, diplomacy, other, research,
     economic, military and rebels categories.
-    Every matrix holds one value per source, with `0.0` for no effect.
+    Every matrix holds one value per source, with `0.0` for no effect
+    within a row, and lists only the rows that group actually grants —
+    so a file for a group with no effect in a category holds just its
+    header. `data/vanilla/matrix_index.csv` lists every generated matrix
+    (`file,kind,rows,columns,nonzero_cells`), so you can find the ~110
+    populated files without scanning all of them.
 
     Reference data lives in one directory per game variant
     (`data/vanilla/`; modded installs generate `data/<mod>/` siblings).
@@ -234,12 +239,14 @@ save games\
         build_per_unit_matrices.py
         build_{colonial,prestige,population,diplomacy,other}_matrices.py
       build_{research,economic}_matrices.py
-      build_military_matrices.py
-      build_rebels_matrices.py
+        build_military_matrices.py
+        build_rebels_matrices.py
+        build_matrix_index.py
     data\
       vanilla\                    <- committed vanilla reference data
         inventions_map.json
         modifiers_from_research_list.txt
+        matrix_index.csv           one row per generated matrix (discovery)
         tech_modifiers\<type>\      <- matrices: one dir per tech/invention
         invention_modifiers\<type>\    type (army, commerce, culture,
         westernisation_modifiers\      industry, navy) or reform group
