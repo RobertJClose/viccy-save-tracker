@@ -18,9 +18,17 @@ time.
 
 It likewise records the player's **westernisation** (the military /
 economic reform set: `land_reform`, `army_schools`, ... as flat
-`key=level` lines in the same country block; absent keys, e.g. every
-key for a civilised nation, are simply skipped). Levels are recorded
-raw in `westernisation_changes.csv` with the same snapshot-then-deltas
+`key=level` lines in the same country block). Levels map to `0`/`1`/`2`
+(`no_*` is `0`, `yes_*` is `1`, `*_two` is `2`; zeros omitted, so a
+nation still at `no_*` and a civilised nation both yield no entry).
+`westernisation_changes.csv` uses the same snapshot-then-deltas shape
+as technologies.
+
+It likewise records the player's **active inventions** (numeric IDs in
+`active_inventions={ ... }` in the same country block, mapped through
+`data/vanilla/inventions_map.json` to names; a missing block means no
+inventions; `illegal_inventions` is ignored).
+`invention_changes.csv` uses the same `0`/`1` snapshot-then-deltas
 shape as technologies.
 
 ## Directory layout
@@ -42,9 +50,10 @@ Documents\Paradox Interactive\Victoria II\
         technologies.py          player tech extraction + changes CSV
                                  (snapshot first, deltas after)
         westernisation.py        player westernisation extraction + changes CSV
-                                 (snapshot first, deltas after)
-        inventions.py            STUB: player invention extraction
-                                 (NotImplementedError)
+                                 (numeric 0/1/2, snapshot first, deltas after)
+        inventions.py            player invention extraction + changes CSV
+                                 (IDs -> names via inventions map,
+                                  snapshot first, deltas after)
       setup\                   <- one-shot setup (run manually, not tracking):
         initialise.py            setup dispatcher (`python -m setup.initialise`)
         build_inventions_map.py  invention ID -> name mapping builder
@@ -85,6 +94,7 @@ Documents\Paradox Interactive\Victoria II\
         goods_prices.csv       <- output CSV (created at runtime)
         technology_changes.csv <- tech change log (created at runtime)
         westernisation_changes.csv <- westernisation change log (created at runtime)
+        invention_changes.csv  <- invention change log (created at runtime)
         processed_dates.json   <- dedup ledger (created at runtime)
 ```
 
@@ -213,15 +223,31 @@ per unlocked tech, or just the header when none is unlocked); later
 dates append only changed techs, and unchanged dates append nothing.
 
 Reforms (`westernisation_changes.csv`): one row per level change, with
-levels recorded raw and disappearance as an empty new value:
+`0` = no reform / missing / civilised, `1` = first enacted step,
+`2` = second enacted step (`finance_reform_two`):
 
 ```
 date,westernisation,old_value,new_value
-1836-01-02,land_reform,,no_land_reform
+1845-01-01,land_reform,0,1
+1846-02-01,finance_reform,1,2
+1850-10-04,land_reform,1,0
 ```
 
-Same snapshot-then-deltas shape: full levels once, then only changes;
-unchanged dates append nothing.
+Same snapshot-then-deltas shape: full enacted set once, then only
+changes; unchanged dates append nothing. Histories written before the
+numeric scheme (raw level names, empty-string absence) are treated as
+corrupt: start a fresh output directory.
+
+Inventions (`invention_changes.csv`): one row per activation or loss,
+with `0` = absent and `1` = present (names via
+`data/vanilla/inventions_map.json`):
+
+```
+date,invention,old_value,new_value
+1836-01-02,post_napoleonic_army_doctrine,0,1
+```
+
+Same snapshot-then-deltas shape as technologies.
 
 ## Dedup / processed dates
 
@@ -244,18 +270,23 @@ If the file is missing or corrupt, the script starts with an empty set
   country's `technology` block via `core.parsing.extract_country_block`,
   returns `{tech, ...}`; `name={1 0.000}` means unlocked, the value is
   ignored), `extract_westernisation` in `domains/westernisation.py` (flat
-  `key=level` lines for the fixed `WESTERNISATION_KEYS` set, returns
-  `{westernisation: level}` of keys present; levels recorded raw, absent keys
-  skipped), and later `extract_invention_ids` in its module. Good names are discovered
+  `key=level` lines for the fixed `WESTERNISATION_KEYS` set, mapped via
+  `level_value` to `0`/`1`/`2` with zeros omitted; `extract_raw_westernisation`
+  keeps raw names for setup validation), `extract_invention_ids` plus
+  `extract_inventions`/`resolve_invention_names` in `domains/inventions.py`
+  (`active_inventions={ ... }` IDs, missing means empty,
+  `illegal_inventions` ignored, mapped via the inventions map).
+  Good names are discovered
   dynamically from the save rather than hardcoded, so late-game goods
   and modded goods are tracked without code changes. Do not reintroduce
   per-good helpers.
 - **One processed-dates ledger:** `processed_dates.json` is the single
   source of truth for what has been tracked. Every module (goods,
-  technologies and westernisation today; inventions in future) keys off
+  technologies, westernisation and inventions) keys off
   the same in-game-date set — do not add per-module cursors. Discrete
   state is derived by replaying the changes CSVs
-  (`load_technology_state`, `load_westernisation_state`), not from
+  (`load_technology_state`, `load_westernisation_state`,
+  `load_invention_state`), not from
   separate state files.
 - **Country blocks need brace matching:** nested `{...}` blocks cannot
   be isolated with a single regex — use

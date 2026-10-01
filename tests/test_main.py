@@ -24,6 +24,7 @@ import main
 from helpers import (
     EXAMPLE_SAVE,
     MINIMAL_GOODS,
+    MINIMAL_INVENTIONS,
     MINIMAL_SAVE,
     MINIMAL_TECHS,
     MINIMAL_WESTERNISATION,
@@ -69,14 +70,15 @@ class TestParseSave(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "autosave.v2"
             p.write_text(MINIMAL_SAVE, encoding="utf-8")
-            game_date, result, techs, westernisation = main.parse_save(p)
+            game_date, result, techs, westernisation, inventions = main.parse_save(p)
             self.assertEqual(game_date, "1836-01-02")
             self.assertEqual(result, MINIMAL_GOODS)
             self.assertEqual(techs, MINIMAL_TECHS)
             self.assertEqual(westernisation, MINIMAL_WESTERNISATION)
+            self.assertEqual(inventions, MINIMAL_INVENTIONS)
 
     def test_parses_the_real_example_save(self):
-        game_date, result, techs, westernisation = main.parse_save(EXAMPLE_SAVE)
+        game_date, result, techs, westernisation, inventions = main.parse_save(EXAMPLE_SAVE)
         self.assertEqual(game_date, "1836-01-02")
         self.assertEqual(len(result), 48)
         # The good list is discovered from the save: late-game goods appear.
@@ -86,22 +88,23 @@ class TestParseSave(unittest.TestCase):
         self.assertEqual(result["radio"], 16.0)
         # JAP starts with no unlocked technologies.
         self.assertEqual(techs, set())
-        # ...but with all 15 westernisation levels at their base.
-        self.assertEqual(len(westernisation), 15)
-        self.assertEqual(westernisation["land_reform"], "no_land_reform")
-        self.assertEqual(westernisation["foreign_navies"], "no_foreign_navies")
+        # ...and with no enacted westernisation (all base no_* -> 0).
+        self.assertEqual(westernisation, {})
+        # ...and with no active inventions (no block at game start).
+        self.assertEqual(inventions, set())
 
     def test_parses_civilised_save_ignores_stale_reforms(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "civilised.v2"
             p.write_text(CIVILISED_SAVE, encoding="utf-8")
-            game_date, _, techs, westernisation = main.parse_save(p)
+            game_date, _, techs, westernisation, inventions = main.parse_save(p)
             self.assertEqual(game_date, "1850-02-24")
             self.assertEqual(techs, MINIMAL_TECHS)
             self.assertEqual(westernisation, {})
+            self.assertEqual(inventions, set())
 
     def test_parses_real_1850_example_as_deactivated(self):
-        _, _, _, westernisation = main.parse_save(EXAMPLE_1850_SAVE)
+        _, _, _, westernisation, _ = main.parse_save(EXAMPLE_1850_SAVE)
         self.assertEqual(westernisation, {})
 
 
@@ -129,6 +132,7 @@ class TestProcessSave(unittest.TestCase):
             processed = root / "processed.json"
             tech_changes = root / "technology_changes.csv"
             westernisation_changes = root / "westernisation_changes.csv"
+            invention_changes = root / "invention_changes.csv"
             out = io.StringIO()
             with redirect_stdout(out):
                 result = main.process_save(
@@ -140,6 +144,7 @@ class TestProcessSave(unittest.TestCase):
             self.assertFalse(processed.exists())
             self.assertFalse(tech_changes.exists())
             self.assertFalse(westernisation_changes.exists())
+            self.assertFalse(invention_changes.exists())
 
     def test_new_date_is_recorded(self):
         with tempfile.TemporaryDirectory() as d:
@@ -150,6 +155,7 @@ class TestProcessSave(unittest.TestCase):
             processed = root / "processed.json"
             tech_changes = root / "technology_changes.csv"
             westernisation_changes = root / "westernisation_changes.csv"
+            invention_changes = root / "invention_changes.csv"
             processed_dates = set()
 
             out = io.StringIO()
@@ -162,7 +168,8 @@ class TestProcessSave(unittest.TestCase):
             self.assertIn(
                 "Recorded 1836-01-02: 5 goods, "
                 "1 technologies (1 new), "
-                "2 westernisation (2 changed)",
+                "2 westernisation (2 changed), "
+                "2 inventions (2 new)",
                 out.getvalue(),
             )
             self.assertEqual(len(read_csv(output)), len(MINIMAL_GOODS) + 1)
@@ -179,8 +186,22 @@ class TestProcessSave(unittest.TestCase):
                 read_csv(westernisation_changes),
                 [
                     ["date", "westernisation", "old_value", "new_value"],
-                    ["1836-01-02", "army_schools", "", "no_army_schools"],
-                    ["1836-01-02", "land_reform", "", "no_land_reform"],
+                    ["1836-01-02", "army_schools", "0", "1"],
+                    ["1836-01-02", "land_reform", "0", "1"],
+                ],
+            )
+            # First invention-tracked date writes the full snapshot.
+            self.assertEqual(
+                read_csv(invention_changes),
+                [
+                    ["date", "invention", "old_value", "new_value"],
+                    ["1836-01-02", "flintlock_rifle_armament", "0", "1"],
+                    [
+                        "1836-01-02",
+                        "post_napoleonic_army_doctrine",
+                        "0",
+                        "1",
+                    ],
                 ],
             )
             self.assertIn("1836-01-02", processed_dates)
@@ -198,6 +219,7 @@ class TestProcessSave(unittest.TestCase):
             processed = root / "processed.json"
             tech_changes = root / "technology_changes.csv"
             westernisation_changes = root / "westernisation_changes.csv"
+            invention_changes = root / "invention_changes.csv"
             processed_dates = set()
 
             with redirect_stdout(io.StringIO()):
@@ -206,6 +228,7 @@ class TestProcessSave(unittest.TestCase):
             rows_before = read_csv(output)
             tech_rows_before = read_csv(tech_changes)
             westernisation_rows_before = read_csv(westernisation_changes)
+            invention_rows_before = read_csv(invention_changes)
 
             with redirect_stdout(io.StringIO()):
                 result = main.process_save(
@@ -216,6 +239,7 @@ class TestProcessSave(unittest.TestCase):
             self.assertEqual(read_csv(output), rows_before)
             self.assertEqual(read_csv(tech_changes), tech_rows_before)
             self.assertEqual(read_csv(westernisation_changes), westernisation_rows_before)
+            self.assertEqual(read_csv(invention_changes), invention_rows_before)
 
     def test_fresh_civilised_date_writes_header_only(self):
         with tempfile.TemporaryDirectory() as d:
@@ -225,6 +249,7 @@ class TestProcessSave(unittest.TestCase):
             output = root / "goods.csv"
             processed = root / "processed.json"
             westernisation_changes = root / "westernisation_changes.csv"
+            invention_changes = root / "invention_changes.csv"
             out = io.StringIO()
             with redirect_stdout(out):
                 result = main.process_save(
@@ -232,9 +257,14 @@ class TestProcessSave(unittest.TestCase):
                 )
             self.assertTrue(result)
             self.assertIn("0 westernisation (0 changed)", out.getvalue())
+            self.assertIn("0 inventions (0 new)", out.getvalue())
             self.assertEqual(
                 read_csv(westernisation_changes),
                 [["date", "westernisation", "old_value", "new_value"]],
+            )
+            self.assertEqual(
+                read_csv(invention_changes),
+                [["date", "invention", "old_value", "new_value"]],
             )
 
     def test_westernisation_date_deactivates_tracked_reforms(self):
@@ -264,12 +294,74 @@ class TestProcessSave(unittest.TestCase):
                 read_csv(westernisation_changes),
                 [
                     ["date", "westernisation", "old_value", "new_value"],
-                    ["1836-01-02", "army_schools", "", "no_army_schools"],
-                    ["1836-01-02", "land_reform", "", "no_land_reform"],
-                    ["1850-02-24", "army_schools", "no_army_schools", ""],
-                    ["1850-02-24", "land_reform", "no_land_reform", ""],
+                    ["1836-01-02", "army_schools", "0", "1"],
+                    ["1836-01-02", "land_reform", "0", "1"],
+                    ["1850-02-24", "army_schools", "1", "0"],
+                    ["1850-02-24", "land_reform", "1", "0"],
                 ],
             )
+
+    def test_invention_loss_is_recorded(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            uncivilised = root / "autosave.v2"
+            uncivilised.write_text(MINIMAL_SAVE, encoding="utf-8")
+            civilised = root / "civilised.v2"
+            civilised.write_text(CIVILISED_SAVE, encoding="utf-8")
+            output = root / "goods.csv"
+            processed = root / "processed.json"
+            invention_changes = root / "invention_changes.csv"
+            processed_dates = set()
+
+            with redirect_stdout(io.StringIO()):
+                main.process_save(uncivilised, output, processed, processed_dates)
+
+            out = io.StringIO()
+            with redirect_stdout(out):
+                result = main.process_save(
+                    civilised, output, processed, processed_dates
+                )
+
+            self.assertTrue(result)
+            self.assertIn("0 inventions (0 new)", out.getvalue())
+            self.assertEqual(
+                read_csv(invention_changes),
+                [
+                    ["date", "invention", "old_value", "new_value"],
+                    ["1836-01-02", "flintlock_rifle_armament", "0", "1"],
+                    [
+                        "1836-01-02",
+                        "post_napoleonic_army_doctrine",
+                        "0",
+                        "1",
+                    ],
+                    ["1850-02-24", "flintlock_rifle_armament", "1", "0"],
+                    [
+                        "1850-02-24",
+                        "post_napoleonic_army_doctrine",
+                        "1",
+                        "0",
+                    ],
+                ],
+            )
+
+    def test_unknown_invention_id_is_not_recorded(self):
+        bad = MINIMAL_SAVE.replace("1 20", "9999")
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            save = root / "bad_inv.v2"
+            save.write_text(bad, encoding="utf-8")
+            output = root / "goods.csv"
+            processed = root / "processed.json"
+            out = io.StringIO()
+            with redirect_stdout(out):
+                result = main.process_save(
+                    save, output, processed, set()
+                )
+            self.assertFalse(result)
+            self.assertIn("Could not process bad_inv.v2", out.getvalue())
+            self.assertFalse(output.exists())
+            self.assertFalse(processed.exists())
 
 
 class TestProcessExistingSaves(unittest.TestCase):
@@ -307,8 +399,21 @@ class TestProcessExistingSaves(unittest.TestCase):
                 read_csv(out / "westernisation_changes.csv"),
                 [
                     ["date", "westernisation", "old_value", "new_value"],
-                    ["1836-01-02", "army_schools", "", "no_army_schools"],
-                    ["1836-01-02", "land_reform", "", "no_land_reform"],
+                    ["1836-01-02", "army_schools", "0", "1"],
+                    ["1836-01-02", "land_reform", "0", "1"],
+                ],
+            )
+            self.assertEqual(
+                read_csv(out / "invention_changes.csv"),
+                [
+                    ["date", "invention", "old_value", "new_value"],
+                    ["1836-01-02", "flintlock_rifle_armament", "0", "1"],
+                    [
+                        "1836-01-02",
+                        "post_napoleonic_army_doctrine",
+                        "0",
+                        "1",
+                    ],
                 ],
             )
 

@@ -46,16 +46,25 @@ JAP=
 \t{
 \t\tflintlock_rifles={1 0.000}
 \t}
-\tland_reform=no_land_reform
-\tarmy_schools=no_army_schools
+\tland_reform=yes_land_reform
+\tarmy_schools=yes_army_schools
+\tactive_inventions=
+\t{
+\t\t1 20
+\t}
 }
 """
 
 MINIMAL_TECHS = {"flintlock_rifles"}
 
 MINIMAL_WESTERNISATION = {
-    "land_reform": "no_land_reform",
-    "army_schools": "no_army_schools",
+    "land_reform": "1",
+    "army_schools": "1",
+}
+
+MINIMAL_INVENTIONS = {
+    "post_napoleonic_army_doctrine",
+    "flintlock_rifle_armament",
 }
 
 MINIMAL_GOODS = {

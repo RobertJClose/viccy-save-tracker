@@ -25,7 +25,7 @@ from pathlib import Path
 from core.config import GAME_DIR, VANILLA_DATA_DIR
 from core.parsing import extract_braced_content, extract_country_block, extract_player_tag
 from domains.technologies import extract_technologies
-from domains.westernisation import WESTERNISATION_KEYS, extract_westernisation
+from domains.westernisation import WESTERNISATION_KEYS, extract_raw_westernisation
 from setup.build_inventions_map import strip_comments
 from setup.research_modifiers.build_modifiers_from_research_list import (
     INVENTIONS_SUBDIR,
@@ -492,7 +492,7 @@ def validate_against_save(
             f"{unknown_techs[:10]}..."
         )
 
-    westernisation = extract_westernisation(country_block)
+    westernisation = extract_raw_westernisation(country_block)
     unknown_levels = sorted(
         f"{key}={level}"
         for key, level in westernisation.items()

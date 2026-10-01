@@ -30,6 +30,13 @@ from domains.technologies import (
     extract_technologies,
     load_technology_state,
 )
+from domains.inventions import (
+    CHANGES_FILENAME as INVENTION_CHANGES_FILENAME,
+    append_invention_changes,
+    extract_inventions,
+    load_invention_map,
+    load_invention_state,
+)
 from domains.westernisation import (
     CHANGES_FILENAME as WESTERNISATION_CHANGES_FILENAME,
     append_westernisation_changes,
@@ -42,20 +49,25 @@ from domains.westernisation import (
 # Save processing
 # ---------------------------------------------------------------------------
 
-def parse_save(path: Path) -> tuple[str, dict[str, float], set[str], dict[str, str]]:
+def parse_save(
+    path: Path,
+) -> tuple[str, dict[str, float], set[str], dict[str, str], set[str]]:
     """
     Parse a Victoria II save and return:
 
         (game_date, {good: price, ...}, {unlocked technology, ...},
-         {westernisation: level, ...})
+         {westernisation: level, ...}, {active invention, ...})
 
-    Technologies and westernisation belong to the player country (see the
-    ``player=`` header); ``name={1 0.000}`` means unlocked, and
-    westernisation levels (e.g. ``land_reform=no_land_reform``) are
-    recorded raw. A civilised player (``civilized=yes``) yields no
-    westernisation — stale reform lines kept by the game after
-    westernisation are deactivated, so the next processed date records
-    their disappearance.
+    Technologies, westernisation and inventions belong to the player
+    country (see the ``player=`` header); ``name={1 0.000}`` means
+    unlocked, westernisation levels map to ``0``/``1``/``2``
+    (``no_*`` is ``0``, ``yes_*`` is ``1``, ``*_two`` is ``2``; zeros
+    omitted), and invention IDs in ``active_inventions={ ... }`` map
+    through ``data/vanilla/inventions_map.json`` to names. A civilised
+    player (``civilized=yes``) yields no westernisation — stale reform
+    lines kept by the game after westernisation are deactivated, so the
+    next processed date records their return to ``0``. A missing
+    ``active_inventions`` block yields no inventions.
     """
     text = read_save(path)
 
@@ -65,8 +77,9 @@ def parse_save(path: Path) -> tuple[str, dict[str, float], set[str], dict[str, s
     country_block = extract_country_block(text, player_tag)
     technologies = extract_technologies(country_block)
     westernisation = extract_westernisation(country_block)
+    inventions = extract_inventions(country_block, load_invention_map())
 
-    return game_date, goods, technologies, westernisation
+    return game_date, goods, technologies, westernisation, inventions
 
 
 def process_save(
@@ -85,7 +98,7 @@ def process_save(
         return False
 
     try:
-        game_date, goods, techs, westernisation = parse_save(path)
+        game_date, goods, techs, westernisation, inventions = parse_save(path)
 
     except (OSError, ValueError) as exc:
         print(f"Could not process {path.name}: {exc}")
@@ -112,6 +125,12 @@ def process_save(
         westernisation_file, game_date, previous_westernisation, westernisation
     )
 
+    invention_file = processed_file.parent / INVENTION_CHANGES_FILENAME
+    previous_inventions = load_invention_state(invention_file)
+    acquired_inventions, _ = append_invention_changes(
+        invention_file, game_date, previous_inventions, inventions
+    )
+
     processed_dates.add(game_date)
     save_processed_dates(processed_file, processed_dates)
 
@@ -119,7 +138,8 @@ def process_save(
         f"Recorded {game_date}: "
         f"{len(goods)} goods, "
         f"{len(techs)} technologies ({len(acquired)} new), "
-        f"{len(westernisation)} westernisation ({len(changed_westernisation)} changed)"
+        f"{len(westernisation)} westernisation ({len(changed_westernisation)} changed), "
+        f"{len(inventions)} inventions ({len(acquired_inventions)} new)"
     )
 
     return True
@@ -244,8 +264,8 @@ def watch(output_dir: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "Track Victoria II good prices, player technology "
-            "and westernisation."
+            "Track Victoria II good prices, player technology, "
+            "westernisation and inventions."
         ),
     )
 

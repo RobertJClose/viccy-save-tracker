@@ -2,8 +2,8 @@
 
 A small Python program that watches Victoria II autosaves and records
 the world-market good prices, the player country's unlocked
-technologies, and its westernisation to `.csv` files suitable for
-import into LibreOffice Calc.
+technologies, its westernisation, and its active inventions to `.csv`
+files suitable for import into LibreOffice Calc.
 
 ## Requirements
 
@@ -70,7 +70,7 @@ import into LibreOffice Calc.
 Both modes require an **output directory** that already exists. This
 directory is the "history" for a specific save game: it holds that
 world's `goods_prices.csv`, `technology_changes.csv`,
-`westernisation_changes.csv`, and
+`westernisation_changes.csv`, `invention_changes.csv`, and
 `processed_dates.json`. Point the script
 at the directory matching the save you are about to play.
 
@@ -116,7 +116,7 @@ the output directory for that world.
 
 ## Output
 
-The program writes three CSV files (created on first run) inside the
+The program writes four CSV files (created on first run) inside the
 output directory you specify. In all files, `date` is the in-game date
 (YYYY-MM-DD), not the real-world date.
 
@@ -145,22 +145,42 @@ Replaying `technology_changes.csv` in date order reconstructs the
 unlocked set at any date; dates with no changes add no rows.
 
 `westernisation_changes.csv`: the player country's westernisation
-levels as a change log — full levels on the first date tracked, then
-only changes (levels recorded raw; a vanished key means an empty new
-value):
+levels as a change log — the full set on the first date tracked, then
+only changes (`0` = no reform / missing / civilised, `1` = first
+enacted step, `2` = second enacted step, today only
+`finance_reform_two`):
 
 ```csv
 date,westernisation,old_value,new_value
-1836-01-02,land_reform,,no_land_reform
-1836-05-03,land_reform,no_land_reform,land_reform_enacted
+1845-01-01,land_reform,0,1
+1846-02-01,finance_reform,1,2
+1850-10-04,land_reform,1,0
 ```
 
 Replaying it in date order reconstructs the levels at any date; dates
 with no changes add no rows. A civilised player (`civilized=yes`)
 tracks as no westernisation, so a fresh civilised history holds just
 the header and the westernisation date records every previously
-tracked reform disappearing. Stale reform lines kept by the game
-after westernisation are ignored.
+tracked reform returning to `0`. Stale reform lines kept by the game
+after westernisation are ignored. Histories written before the numeric
+`0`/`1`/`2` scheme hold raw level names and must not be mixed: start a
+fresh output directory.
+
+`invention_changes.csv`: the player country's active inventions as a
+change log — the full set on the first date tracked, then only
+activations and deactivations (`0` = absent, `1` = present).
+Save-file IDs in `active_inventions={ ... }` map through
+`data/vanilla/inventions_map.json` to names; a missing block means no
+inventions:
+
+```csv
+date,invention,old_value,new_value
+1836-01-02,post_napoleonic_army_doctrine,0,1
+1836-05-03,flintlock_rifle_armament,0,1
+```
+
+Replaying `invention_changes.csv` in date order reconstructs the
+active set at any date; dates with no changes add no rows.
 
 The good list is taken straight from the save, so late-game goods (for
 example `automobiles`, `aeroplanes`, `radio`) appear automatically as
@@ -243,5 +263,6 @@ save games\
       goods_prices.csv
       technology_changes.csv
       westernisation_changes.csv
+      invention_changes.csv
       processed_dates.json
 ```
