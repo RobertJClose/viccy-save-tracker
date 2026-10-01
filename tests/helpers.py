@@ -834,3 +834,103 @@ def make_military_game_dir(root: Path) -> Path:
         MIL_ISSUES_FIXTURE, encoding="utf-8"
     )
     return game_dir
+
+
+# A synthetic game install for the rebels matrices task: a tech with a
+# rebel scalar, an invention with the rebel_org_gain oddball shape, and
+# reforms granting militancy values (as in vanilla).
+REB_TECH_FIXTURE = """#tech_group_one
+reb_tech = {
+\tarea = some_area
+\tyear = 1836
+\tcost = 3600
+\tseperatism = 0.5
+\tai_chance = {
+\t\tfactor = 2
+\t}
+}
+plain_tech = {
+\tarea = some_area
+\tyear = 1900
+\tcost = 7200
+}
+"""
+
+REB_INVENTION_FIXTURE = """reb_invention = {
+\tlimit = { reb_tech = 1 }
+\tchance = {
+\t\tbase = 2
+\t}
+\teffect = {
+\t\trebel_org_gain = {
+\t\t\tfaction = all
+\t\t\tvalue = -0.25
+\t\t}
+\t\tsuppression_points_modifier = 0.25
+\t}
+}
+effectless_invention = {
+\tlimit = { reb_tech = 1 }
+}
+"""
+
+REB_ISSUES_FIXTURE = """economic_reforms = {
+\tland_reform = {
+\t\tno_land_reform = {
+\t\t\tglobal_pop_militancy_modifier = -0.005
+\t\t}
+\t\tyes_land_reform = {
+\t\t\tfarm_rgo_eff = 0.25
+\t\t\ton_execute = {
+\t\t\t\teffect = {
+\t\t\t\t\tany_pop = {
+\t\t\t\t\t\tmilitancy = 1
+\t\t\t\t\t}
+\t\t\t\t}
+\t\t\t}
+\t\t}
+\t}
+}
+military_reforms = {
+\tarmy_schools = {
+\t\tno_army_schools = {
+\t\t\tglobal_pop_militancy_modifier = -0.005
+\t\t}
+\t\tyes_army_schools = {
+\t\t\tland_organisation = 0.1
+\t\t}
+\t}
+}
+"""
+
+# A synthetic save whose techs and reform levels all exist in the
+# REB_* fixtures above.
+REB_SAVE = """date="1836.1.2"
+player="TST"
+TST=
+{
+\ttechnology=
+\t{
+\t\treb_tech={1 0.000}
+\t}
+\tland_reform=no_land_reform
+\tarmy_schools=no_army_schools
+}
+"""
+
+
+def make_rebels_game_dir(root: Path) -> Path:
+    game_dir = root / "game"
+    (game_dir / "technologies").mkdir(parents=True)
+    (game_dir / "inventions").mkdir(parents=True)
+    (game_dir / "common").mkdir(parents=True)
+    (game_dir / "technologies" / "army_tech.txt").write_text(
+        REB_TECH_FIXTURE, encoding="utf-8"
+    )
+    (game_dir / "inventions" / "culture_inventions.txt").write_text(
+        REB_INVENTION_FIXTURE, encoding="utf-8"
+    )
+    (game_dir / "common" / "issues.txt").write_text(
+        REB_ISSUES_FIXTURE, encoding="utf-8"
+    )
+    return game_dir

@@ -50,7 +50,7 @@ files suitable for import into LibreOffice Calc.
     westernisation}_modifiers/<group>/{rgo_goods,factory_goods}_modifiers.csv`),
     and one `<category>_modifiers.csv` per group directory for each of the
     colonial, prestige, population, diplomacy, other, research,
-    economic and military categories.
+    economic, military and rebels categories.
     Every matrix holds one value per source, with `0.0` for no effect.
 
     Reference data lives in one directory per game variant
@@ -233,8 +233,9 @@ save games\
         build_per_goods_matrices.py
         build_per_unit_matrices.py
         build_{colonial,prestige,population,diplomacy,other}_matrices.py
-        build_{research,economic}_matrices.py
-        build_military_matrices.py
+      build_{research,economic}_matrices.py
+      build_military_matrices.py
+      build_rebels_matrices.py
     data\
       vanilla\                    <- committed vanilla reference data
         inventions_map.json
@@ -255,6 +256,7 @@ save games\
             research_modifiers.csv
             economic_modifiers.csv
             military_modifiers.csv
+            rebels_modifiers.csv
       <mod>\                     <- per-mod reference data (generated, not committed)
     example_saves\
       example_japan_1836.v2

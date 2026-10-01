@@ -66,6 +66,7 @@ Documents\Paradox Interactive\Victoria II\
                                    one small-category matrix task each
           build_{research,economic}_matrices.py
           build_military_matrices.py  military category matrix task
+          build_rebels_matrices.py  rebels category matrix task
       data\
         vanilla\                 committed vanilla reference data (generated)
           inventions_map.json      ID -> name mapping (generated, index == ID)
@@ -86,6 +87,7 @@ Documents\Paradox Interactive\Victoria II\
               research_modifiers.csv
               economic_modifiers.csv
               military_modifiers.csv
+              rebels_modifiers.csv
       example_saves\
         example_japan_1836.v2  <- example save for agents to inspect
         example_japan_1845.v2
@@ -343,8 +345,8 @@ If the file is missing or corrupt, the script starts with an empty set
    `None` third TASKS entry marks a whole-tree task (forwarded `--output-dir`
    instead of `--output <file>`).
 - **Small categories mirror per-goods, one script each:** colonial, prestige,
-  population, diplomacy, other, research, economic and military each own a
-  `setup/research_modifiers/build_<category>_matrices.py`
+  population, diplomacy, other, research, economic, military and rebels
+  each own a `setup/research_modifiers/build_<category>_matrices.py`
   task writing `<category>_modifiers.csv` into the same 12 group directories
   (no new top-level dirs, no monolith module). Rows are the agreed exact name
   sets (verbatim, twins and `seperatism` included); everything mechanical

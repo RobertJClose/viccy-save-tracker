@@ -60,6 +60,9 @@ from setup.research_modifiers.build_per_unit_matrices import (
 from setup.research_modifiers.build_military_matrices import (
     main as build_military_matrices_main,
 )
+from setup.research_modifiers.build_rebels_matrices import (
+    main as build_rebels_matrices_main,
+)
 
 TASKS = {
     "inventions-map": (
@@ -121,6 +124,11 @@ TASKS = {
     "military-matrices": (
         "Build the military modifier matrices from the game install.",
         build_military_matrices_main,
+        None,
+    ),
+    "rebels-matrices": (
+        "Build the rebels modifier matrices from the game install.",
+        build_rebels_matrices_main,
         None,
     ),
 }
